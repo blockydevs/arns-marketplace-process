@@ -866,3 +866,269 @@ Handlers.add('Migrate-Activity-Stats', Handlers.utils.hasMatchingTag('Action', '
 
 	print('Successfully processed address statistics')
 end)
+
+-- Create 1500 test orders (500 fixed, 500 dutch, 500 english)
+Handlers.add('Create-Test-Orders', Handlers.utils.hasMatchingTag('Action', 'Create-Test-Orders'), function(msg)
+	-- Optionally restrict to owner: uncomment the next two lines if needed
+	-- if msg.From ~= msg.Owner then return end
+
+	local function randomAddress()
+		local chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
+		local s = {}
+		for i = 1, 43 do
+			local idx = math.random(1, #chars)
+			s[i] = chars:sub(idx, idx)
+		end
+		return table.concat(s)
+	end
+
+	local function randomInt(min, max)
+		return math.floor(min + (math.random() * (max - min)))
+	end
+
+	-- 3x30 word lists for name generation
+	local englishWords = {
+		"river","mountain","forest","ocean","sky","cloud","stone","fire","wind","star",
+		"moon","sun","field","bridge","garden","harbor","valley","meadow","island","canyon",
+		"spring","autumn","winter","summer","echo","shadow","light","thunder","breeze","path"
+	}
+	local polishWords = {
+		"jezioro","gora","las","ocean","niebo","chmura","kamien","ogien","wiatr","gwiazda",
+		"ksiezyc","slonce","polana","most","ogrod","port","dolina","laka","wyspa","wawoz",
+		"wiosna","jesien","zima","lato","echo","cien","swiatlo","grzmot","bryza","sciezka"
+	}
+	local spanishWords = {
+		"rio","montana","bosque","oceano","cielo","nube","piedra","fuego","viento","estrella",
+		"luna","sol","campo","puente","jardin","puerto","valle","pradera","isla","canon",
+		"primavera","otonio","invierno","verano","eco","sombra","luz","trueno","brisa","sendero"
+	}
+
+	local function randomWord()
+		local listPick = math.random(1, 3)
+		if listPick == 1 then
+			return englishWords[math.random(1, #englishWords)]
+		elseif listPick == 2 then
+			return polishWords[math.random(1, #polishWords)]
+		else
+			return spanishWords[math.random(1, #spanishWords)]
+		end
+	end
+
+	local function buildTestDomain(seq)
+		local w1, w2, w3 = randomWord(), randomWord(), randomWord()
+		return string.format("test-domain-%d-%s-%s-%s.ant", seq, w1, w2, w3)
+	end
+
+	local baseTs = math.floor(tonumber(msg.Timestamp))
+	-- Seed randomness deterministically off current timestamp
+	math.randomseed((baseTs % 1000000) + 1)
+
+	local createdCount = 0
+	local seq = 1
+
+	local function genFixed(i)
+		local orderId = randomAddress()
+		local createdAt = baseTs - (i % 1000) * 7 -- deterministic spacing
+		local expirationTime = createdAt + 3600 + ((i % 59) * 10)
+		local dominantToken = randomAddress()
+		local swapToken = randomAddress()
+		local sender = randomAddress()
+		local quantity = tostring(randomInt(1, 5)) -- 1..4
+		local price = tostring(randomInt(10000, 10000000))
+		local domain = buildTestDomain(seq)
+		local ownershipType = nil
+		local leaseStart = nil
+		local leaseEnd = nil
+
+		local order = {
+			OrderId = orderId,
+			DominantToken = dominantToken,
+			SwapToken = swapToken,
+			Sender = sender,
+			Receiver = nil,
+			Quantity = tostring(quantity),
+			Price = tostring(price),
+			CreatedAt = createdAt,
+			Domain = domain,
+			OrderType = 'fixed',
+			MinimumPrice = nil,
+			DecreaseInterval = nil,
+			DecreaseStep = nil,
+			ExpirationTime = expirationTime,
+			OwnershipType = ownershipType,
+			LeaseStartTimestamp = leaseStart,
+			LeaseEndTimestamp = leaseEnd,
+			isTestOrder = true
+		}
+		table.insert(ListedOrders, order)
+		createdCount = createdCount + 1
+		seq = seq + 1
+	end
+
+	local function genDutch(i)
+		local orderId = randomAddress()
+		local createdAt = baseTs - (i % 1000) * 11
+		local duration = 3600 + ((i % 30) * 60)
+		local expirationTime = createdAt + duration
+		local dominantToken = randomAddress()
+		local swapToken = randomAddress()
+		local sender = randomAddress()
+		local quantity = '1'
+		local startingPrice = randomInt(1000000, 50000000)
+		local minimumPrice = startingPrice - math.max(1, math.floor(startingPrice / 10))
+		local decreaseInterval = 60 * (5 + (i % 6))
+		local intervalsCount = math.max(1, math.floor((expirationTime - createdAt) / decreaseInterval))
+		local decreaseStep = math.max(1, math.floor((startingPrice - minimumPrice) / intervalsCount))
+
+		local order = {
+			OrderId = orderId,
+			DominantToken = dominantToken,
+			SwapToken = swapToken,
+			Sender = sender,
+			Receiver = nil,
+			Quantity = tostring(quantity),
+			Price = tostring(startingPrice),
+			CreatedAt = createdAt,
+			Domain = buildTestDomain(seq),
+			OrderType = 'dutch',
+			MinimumPrice = tostring(minimumPrice),
+			DecreaseInterval = tostring(decreaseInterval),
+			DecreaseStep = tostring(decreaseStep),
+			ExpirationTime = expirationTime,
+			OwnershipType = nil,
+			LeaseStartTimestamp = nil,
+			LeaseEndTimestamp = nil,
+			isTestOrder = true
+		}
+		table.insert(ListedOrders, order)
+		createdCount = createdCount + 1
+		seq = seq + 1
+	end
+
+	local function genEnglish(i)
+		local orderId = randomAddress()
+		local createdAt = baseTs - (i % 1000) * 13
+		local expirationTime = createdAt + 5400 + ((i % 45) * 30)
+		local dominantToken = randomAddress()
+		local swapToken = randomAddress()
+		local sender = randomAddress()
+		local quantity = '1'
+		local startingPrice = randomInt(500000, 20000000)
+
+		local order = {
+			OrderId = orderId,
+			DominantToken = dominantToken,
+			SwapToken = swapToken,
+			Sender = sender,
+			Receiver = nil,
+			Quantity = tostring(quantity),
+			Price = tostring(startingPrice),
+			CreatedAt = createdAt,
+			Domain = buildTestDomain(seq),
+			OrderType = 'english',
+			MinimumPrice = nil,
+			DecreaseInterval = nil,
+			DecreaseStep = nil,
+			ExpirationTime = expirationTime,
+			OwnershipType = nil,
+			LeaseStartTimestamp = nil,
+			LeaseEndTimestamp = nil,
+			isTestOrder = true
+		}
+		table.insert(ListedOrders, order)
+		createdCount = createdCount + 1
+		-- Initialize empty bids entry for english auction order
+		if not AuctionBids[orderId] then
+			AuctionBids[orderId] = { Bids = {}, HighestBid = nil, HighestBidder = nil }
+		end
+
+		-- Add 5 random bids for english auctions
+		local bidsToCreate = 5
+		local currentBid = startingPrice
+		for k = 1, bidsToCreate do
+			local bidder = randomAddress()
+			local minInc = math.max(1, math.floor(currentBid / 50)) -- ~2% min step
+			local maxInc = math.max(minInc + 1, math.floor(currentBid / 10)) -- up to ~10%
+			local inc = randomInt(minInc, maxInc)
+			currentBid = currentBid + inc
+			local bidTimestamp = createdAt + (k * 60) + randomInt(0, 45)
+			if AuctionBids[orderId].HighestBid == nil or bint(currentBid) > bint(AuctionBids[orderId].HighestBid) then
+				AuctionBids[orderId].HighestBid = tostring(currentBid)
+				AuctionBids[orderId].HighestBidder = bidder
+			end
+			table.insert(AuctionBids[orderId].Bids, {
+				Bidder = bidder,
+				Amount = tostring(currentBid),
+				Timestamp = bidTimestamp,
+				OrderId = orderId
+			})
+		end
+		seq = seq + 1
+	end
+
+	for i = 1, 500 do genFixed(i) end
+	for i = 1, 500 do genDutch(i) end
+	for i = 1, 500 do genEnglish(i) end
+
+	ao.send({
+		Target = msg.From,
+		Action = 'Action-Response',
+		Tags = { Status = 'Success', Message = 'Created test orders', Handler = 'Create-Test-Orders', Total = tostring(createdCount) }
+	})
+end)
+
+-- Remove all test orders that were created by Create-Test-Orders
+Handlers.add('Remove-Test-Orders', Handlers.utils.hasMatchingTag('Action', 'Remove-Test-Orders'), function(msg)
+	-- Optionally restrict to owner
+	-- if msg.From ~= msg.Owner then return end
+
+	local removed = { listed = 0, executed = 0, cancelled = 0, expired = 0, auctions = 0 }
+	local testIds = {}
+	local function isTestDomain(o)
+		return o and o.Domain and type(o.Domain) == 'string' and o.Domain:sub(1, 12) == 'test-domain-'
+	end
+
+	local function filterOut(tbl)
+		local keep = {}
+		for _, o in ipairs(tbl) do
+			if o.isTestOrder or isTestDomain(o) then
+				removed.listed = removed.listed + ((tbl == ListedOrders) and 1 or 0)
+				removed.executed = removed.executed + ((tbl == ExecutedOrders) and 1 or 0)
+				removed.cancelled = removed.cancelled + ((tbl == CancelledOrders) and 1 or 0)
+				removed.expired = removed.expired + ((tbl == ExpiredOrders) and 1 or 0)
+				if o.OrderId then testIds[o.OrderId] = true end
+			else
+				table.insert(keep, o)
+			end
+		end
+		return keep
+	end
+
+	ListedOrders = filterOut(ListedOrders)
+	ExecutedOrders = filterOut(ExecutedOrders)
+	CancelledOrders = filterOut(CancelledOrders)
+	ExpiredOrders = filterOut(ExpiredOrders)
+
+	-- Remove any AuctionBids entries belonging to removed test orders
+	for id, _ in pairs(testIds) do
+		if AuctionBids[id] ~= nil then
+			AuctionBids[id] = nil
+			removed.auctions = removed.auctions + 1
+		end
+	end
+
+	ao.send({
+		Target = msg.From,
+		Action = 'Action-Response',
+		Tags = {
+			Status = 'Success',
+			Message = 'Removed test orders',
+			Handler = 'Remove-Test-Orders',
+			ListedRemoved = tostring(removed.listed),
+			ExecutedRemoved = tostring(removed.executed),
+			CancelledRemoved = tostring(removed.cancelled),
+			ExpiredRemoved = tostring(removed.expired),
+			AuctionsRemoved = tostring(removed.auctions)
+		}
+	})
+end)
