@@ -1095,7 +1095,8 @@ Handlers.add('Remove-Test-Orders', Handlers.utils.hasMatchingTag('Action', 'Remo
 				removed.listed = removed.listed + ((tbl == ListedOrders) and 1 or 0)
 				removed.executed = removed.executed + ((tbl == ExecutedOrders) and 1 or 0)
 				removed.cancelled = removed.cancelled + ((tbl == CancelledOrders) and 1 or 0)
-				removed.expired = removed.expired + ((tbl == ExpiredOrders) and 1 or 0)
+				-- No ExpiredOrders table anymore; derive on reads
+				removed.expired = removed.expired + 0
 				if o.OrderId then testIds[o.OrderId] = true end
 			else
 				table.insert(keep, o)
@@ -1107,7 +1108,7 @@ Handlers.add('Remove-Test-Orders', Handlers.utils.hasMatchingTag('Action', 'Remo
 	ListedOrders = filterOut(ListedOrders)
 	ExecutedOrders = filterOut(ExecutedOrders)
 	CancelledOrders = filterOut(CancelledOrders)
-	ExpiredOrders = filterOut(ExpiredOrders)
+	-- No ExpiredOrders table to filter
 
 	-- Remove any AuctionBids entries belonging to removed test orders
 	for id, _ in pairs(testIds) do
