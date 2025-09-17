@@ -1,65 +1,56 @@
 package.path = package.path .. ';../src/?.lua'
 
-local ucm = require('ucm')
-local utils = require('utils')
-local JSON = require('JSON')
-
--- PIXL PROCESS: DM3FoZUq_yebASPhgd8pEIRIzDW6muXEhxz5-JwbZwo
-
 
 ARIO_TOKEN_PROCESS_ID = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'
+ACTIVITY_PROCESS = '7_psKu3QHwzc2PFCJk2lEwyitLJbz6Vj7hOcltOulj4'
 
-ao = {
-	send = function(msg)
-		if msg.Action == 'Transfer' then
-			print(msg.Action .. ' ' .. msg.Tags.Quantity .. ' to ' .. msg.Tags.Recipient)
-		else
-			print(msg.Action)
-		end
-	end
-}
+ao = { send = function() end } -- Default empty mock
 
 Handlers = {
-	-- A simple mock `add` function that stores the handler by name.
-	add = function(name, condition, handler)
-		Handlers[name] = handler
-	end,
-	-- A mock `prepend` function. For testing, it can behave the same as `add`.
-	prepend = function(name, condition, handler)
-		Handlers[name] = handler
-	end,
+	add = function(name, condition, handler) Handlers[name] = handler end,
+	prepend = function(name, condition, handler) Handlers[name] = handler end,
 	utils = {
 		hasMatchingTag = function(tagName, tagValue)
-			return function(msg)
-				return msg.Tags and msg.Tags[tagName] == tagValue
-			end
+			return function(msg) return msg.Tags and msg.Tags[tagName] == tagValue end
 		end
 	}
 }
 
-utils.test('Create listing',
+
+local JSON = require('JSON')
+package.loaded['json'] = JSON
+
+
+local ucm = require('ucm')
+local utils = require('utils')
+require('process')
+
+
+utils.test('Create listing (ANT Sell Order)',
 	function()
 		Orderbook = {}
-		ACTIVITY_PROCESS = '7_psKu3QHwzc2PFCJk2lEwyitLJbz6Vj7hOcltOulj4'
+		local original_ao_send = ao.send
+		ao.send = function() end -- Suppress print output for this test
 
 		ucm.createOrder({
-			orderId = 'N5vr71SXaEYsdVoVCEB5qOTjHNwyQVwGvJxBh_kgTbE', -- Sell order ID
-			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			orderId = 'N5vr71SXaEYsdVoVCEB5qOTjHNwyQVwGvJxBh_kgTbE',
+			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
+			swapToken = ARIO_TOKEN_PROCESS_ID,
 			sender = 'SaXnsUgxJLkJRghWQOUs9-wB0npVviewTkUbh2Yk64M',
-			quantity = 1,
-			price = '500000000000',
+			quantity = 1, -- Must be 1 for ANT sell orders
+			price = '500000000000', -- Price is required for selling ANT
 			orderType = 'fixed',
 			createdAt = '1722535710966',
 			blockheight = '123456789',
-			expirationTime = '1722535720966' -- Valid expiration time
+			expirationTime = '1722535720966'
 		})
-
+		
+		ao.send = original_ao_send
 		return Orderbook
 	end,
 	{
 		{
-			Pair = { 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8' },
+			Pair = { 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID },
 			Orders = {
 				{
 					Creator = 'SaXnsUgxJLkJRghWQOUs9-wB0npVviewTkUbh2Yk64M',
@@ -70,7 +61,7 @@ utils.test('Create listing',
 					Quantity = '1',
 					Token = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10',
 					OrderType = 'fixed',
-					ExpirationTime = '1722535720966',
+					ExpirationTime = '1722535720966'
 				}
 			}
 		}
@@ -80,6 +71,8 @@ utils.test('Create listing',
 utils.test('Create listing (invalid quantity)',
 	function()
 		Orderbook = {}
+		local original_ao_send = ao.send
+		ao.send = function() end -- Suppress output
 
 		ucm.createOrder({
 			orderId = 'some-order-id',
@@ -93,11 +86,11 @@ utils.test('Create listing (invalid quantity)',
 			orderType = 'fixed',
 			requestedOrderId = 'some-order-id'
 		})
-
+		
+		ao.send = original_ao_send
 		return Orderbook
 	end,
 	{}
--- Changed behaviour from the original ucm implementation - pair entry is not created when validation fails
 )
 
 -- NA to this process (we sell ANT only in the quantities of one)
@@ -672,54 +665,191 @@ utils.test('Full execution removes from CurrentListings',
 	{}
 )
 
-utils.test('Cancel order removes from CurrentListings',
+utils.test('Cancel-Order should succeed for a valid, active order',
 	function()
+		local creatorAddress = 'creator-address'
+		local orderId = 'active-order'
+		
+		Orderbook = { { Pair = { 'token-A', ARIO_TOKEN_PROCESS_ID }, Orders = { { Id = orderId, Creator = creatorAddress, Token = 'token-A', Quantity = '100' } } } }
 
-		local JSON_Module = require('JSON')
-		package.loaded['json'] = JSON_Module
-
-
-		require('process')
-
-		ACTIVITY_PROCESS = '7_psKu3QHwzc2PFCJk2lEwyitLJbz6Vj7hOcltOulj4'
-		Orderbook = {
-			{
-				Pair = { 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8' },
-				Orders = {
-					{
-						Creator = 'SaXnsUgxJLkJRghWQOUs9-wB0npVviewTkUbh2Yk64M',
-						DateCreated = '1722535710966',
-						Id = 'N5vr71SXaEYsdVoVCEB5qOTjHNwyQVwGvJxBh_kgTbE',
-						Quantity = '1',
-						Token = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10'
-					}
-				}
-			}
-		}
-		CurrentListings = { ['N5vr71SXaEYsdVoVCEB5qOTjHNwyQVwGvJxBh_kgTbE'] = {} }
-
+		local sentMessages = {}
 		local original_ao_send = ao.send
 		ao.send = function(msg)
+			table.insert(sentMessages, msg)
 			if msg.Action == 'Get-Order-By-Id' then
-				return { receive = function() return { Data = JSON:encode({ Sender = 'SaXnsUgxJLkJRghWQOUs9-wB0npVviewTkUbh2Yk64M', Status = 'active' }) } end }
-			else
-				original_ao_send(msg)
+				return { receive = function() return { Data = JSON:encode({ Sender = creatorAddress, Status = 'active', Quantity = '100', Price = '1' }) } end }
 			end
 		end
 
-		Handlers['Cancel-Order']({
-			From = 'SaXnsUgxJLkJRghWQOUs9-wB0npVviewTkUbh2Yk64M',
-			Tags = { Action = 'Cancel-Order' },
-			Data = JSON:encode({ OrderId = 'N5vr71SXaEYsdVoVCEB5qOTjHNwyQVwGvJxBh_kgTbE' })
-		})
-
+		Handlers['Cancel-Order']({ From = creatorAddress, Tags = { Action = 'Cancel-Order' }, Data = JSON:encode({ OrderId = orderId }) })
 		ao.send = original_ao_send
 
-		CurrentListings = {}
-
-		return CurrentListings
+		local refundMessage
+		for _, msg in ipairs(sentMessages) do
+			if msg.Action == 'Transfer' then
+				refundMessage = msg
+				break
+			end
+		end
+		
+		if not (refundMessage and refundMessage.Tags.Quantity == '100' and refundMessage.Tags.Recipient == creatorAddress) then
+			return { error = "Refund transfer was not sent correctly", actual = refundMessage }
+		end
+		
+		return Orderbook
 	end,
-	{}
+	{ { Pair = { 'token-A', ARIO_TOKEN_PROCESS_ID }, Orders = {} } }
+)
+
+utils.test('Cancel-Order should fail if OrderId is missing from data',
+	function()
+		local sentMessages = {}
+		local original_ao_send = ao.send
+		ao.send = function(msg) table.insert(sentMessages, msg) end
+		
+		Handlers['Cancel-Order']({ From = 'some-address', Tags = { Action = 'Cancel-Order' }, Data = JSON:encode({ NotAnOrderId = 'some-value' }) })
+		ao.send = original_ao_send
+
+		local errorResponse = sentMessages[1]
+		return errorResponse and errorResponse.Action == 'Input-Error' and string.find(errorResponse.Tags.Message, 'required { OrderId }')
+	end,
+	true
+)
+
+utils.test('Cancel-Order should fail if the order is not found in the Activity process',
+	function()
+		local sentMessages = {}
+		local original_ao_send = ao.send
+		ao.send = function(msg)
+			table.insert(sentMessages, msg)
+			if msg.Action == 'Get-Order-By-Id' then
+				return { receive = function() return { Data = 'null' } end }
+			end
+		end
+
+		Handlers['Cancel-Order']({ From = 'some-address', Tags = { Action = 'Cancel-Order' }, Data = JSON:encode({ OrderId = "non-existent-order" }) })
+		ao.send = original_ao_send
+
+		local errorResponse = sentMessages[2]
+		return errorResponse and errorResponse.Action == 'Action-Response' and string.find(errorResponse.Tags.Message, 'Order not found')
+	end,
+	true
+)
+
+utils.test('Cancel-Order should fail if the sender is not the order creator',
+	function()
+		local creatorAddress = 'creator-address'
+		local unauthorizedAddress = 'unauthorized-address'
+		local orderId = 'order-to-cancel'
+		
+		Orderbook = { { Pair = { 'token-A', 'token-B' }, Orders = { { Id = orderId, Creator = creatorAddress, Token = 'token-A', Quantity = '1' } } } }
+		local sentMessages = {}
+		local original_ao_send = ao.send
+		ao.send = function(msg)
+			table.insert(sentMessages, msg)
+			if msg.Action == 'Get-Order-By-Id' then
+				return { receive = function() return { Data = JSON:encode({ Sender = creatorAddress, Status = 'active' }) } end }
+			end
+		end
+
+		Handlers['Cancel-Order']({ From = unauthorizedAddress, Tags = { Action = 'Cancel-Order' }, Data = JSON:encode({ OrderId = orderId }) })
+		ao.send = original_ao_send
+		
+		local errorResponse = sentMessages[2]
+		if not (errorResponse and errorResponse.Action == 'Action-Response' and string.find(errorResponse.Tags.Message, 'Unauthorized')) then
+			return false
+		end
+		
+		return Orderbook
+	end,
+	{ { Pair = { 'token-A', 'token-B' }, Orders = { { Id = 'order-to-cancel', Creator = 'creator-address', Token = 'token-A', Quantity = '1' } } } }
+)
+
+utils.test('Cancel-Order should fail for an English auction that has bids',
+	function()
+		local creatorAddress = 'creator-address'
+		local orderId = 'english-auction-with-bids'
+		
+		Orderbook = { { Pair = { 'ant-token', ARIO_TOKEN_PROCESS_ID }, Orders = { { Id = orderId, Creator = creatorAddress, Token = 'ant-token', Quantity = '1', OrderType = 'english' } } } }
+		local sentMessages = {}
+		local original_ao_send = ao.send
+		ao.send = function(msg)
+			table.insert(sentMessages, msg)
+			if msg.Action == 'Get-Order-By-Id' then
+				return { receive = function() return { Data = JSON:encode({ 
+                    Sender = creatorAddress, Status = 'active', OrderType = 'english',
+                    Bids = { { Bidder = 'bidder-1' } }
+                }) } end }
+			end
+		end
+
+		Handlers['Cancel-Order']({ From = creatorAddress, Tags = { Action = 'Cancel-Order' }, Data = JSON:encode({ OrderId = orderId }) })
+		ao.send = original_ao_send
+
+		local errorResponse = sentMessages[2]
+		if not (errorResponse and errorResponse.Action == 'Action-Response' and string.find(errorResponse.Tags.Message, 'cannot cancel an English auction that has bids')) then
+			return false
+		end
+		
+		return Orderbook
+	end,
+	{ { Pair = { 'ant-token', ARIO_TOKEN_PROCESS_ID }, Orders = { { Id = 'english-auction-with-bids', Creator = 'creator-address', Token = 'ant-token', Quantity = '1', OrderType = 'english' } } } }
+)
+
+utils.test('Cancel-Order should fail if order status is not active or expired (e.g., settled)',
+	function()
+		local creatorAddress = 'creator-address'
+		local orderId = 'settled-order'
+		
+		Orderbook = { { Pair = { 'token-A', 'token-B' }, Orders = { { Id = orderId, Creator = creatorAddress, Token = 'token-A', Quantity = '1' } } } }
+		local sentMessages = {}
+		local original_ao_send = ao.send
+		ao.send = function(msg)
+			table.insert(sentMessages, msg)
+			if msg.Action == 'Get-Order-By-Id' then
+				return { receive = function() return { Data = JSON:encode({ Sender = creatorAddress, Status = 'settled' }) } end }
+			end
+		end
+
+		Handlers['Cancel-Order']({ From = creatorAddress, Tags = { Action = 'Cancel-Order' }, Data = JSON:encode({ OrderId = orderId }) })
+		ao.send = original_ao_send
+
+		local errorResponse = sentMessages[2]
+		if not (errorResponse and errorResponse.Action == 'Action-Response' and string.find(errorResponse.Tags.Message, 'not active or expired')) then
+			return false
+		end
+		
+		return Orderbook
+	end,
+	{ { Pair = { 'token-A', 'token-B' }, Orders = { { Id = 'settled-order', Creator = 'creator-address', Token = 'token-A', Quantity = '1' } } } }
+)
+
+utils.test('Cancel-Order should fail if order is in Activity but not in local Orderbook (state mismatch)',
+	function()
+		local creatorAddress = 'creator-address'
+		local orderId = 'mismatch-order'
+		
+		Orderbook = { { Pair = { 'token-A', 'token-B' }, Orders = {} } }
+		local sentMessages = {}
+		local original_ao_send = ao.send
+		ao.send = function(msg)
+			table.insert(sentMessages, msg)
+			if msg.Action == 'Get-Order-By-Id' then
+				return { receive = function() return { Data = JSON:encode({ Sender = creatorAddress, Status = 'active' }) } end }
+			end
+		end
+
+		Handlers['Cancel-Order']({ From = creatorAddress, Tags = { Action = 'Cancel-Order' }, Data = JSON:encode({ OrderId = orderId }) })
+		ao.send = original_ao_send
+
+		local errorResponse = sentMessages[2]
+		if not (errorResponse and errorResponse.Action == 'Action-Response' and string.find(errorResponse.Tags.Message, 'Order not found in orderbook')) then
+			return false
+		end
+		
+		return Orderbook
+	end,
+	{ { Pair = { 'token-A', 'token-B' }, Orders = {} } }
 )
 
 utils.testSummary()
