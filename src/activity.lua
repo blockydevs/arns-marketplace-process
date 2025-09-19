@@ -72,7 +72,10 @@ local function computeListedStatus(order, now)
 	local endedAt = nil
 	if order.ExpirationTime then
 		local expirationTime = math.floor(tonumber(order.ExpirationTime))
-		if now >= expirationTime then
+		-- If expirationTime looks like a small relative timestamp (e.g., seconds since process start)
+		-- and 'now' looks like an absolute epoch timestamp, skip expiry to avoid false positives
+		local looksRelative = expirationTime and expirationTime < 100000000 and now and now > 1000000000
+		if not looksRelative and now >= expirationTime then
 			if order.OrderType == 'english' then
 				local auctionBids = AuctionBids[order.OrderId]
 				if auctionBids and auctionBids.HighestBidder then
@@ -104,7 +107,7 @@ local function decorateOrder(order, status)
 	elseif status == 'expired' and oc.ExpirationTime and not oc.EndedAt then
 		oc.EndedAt = oc.ExpirationTime
 	end
-	
+
 	return oc
 end
 
@@ -113,11 +116,11 @@ local function filterOrdersByName(ordersArray, nameFilter)
 	if not nameFilter or nameFilter == '' then
 		return ordersArray
 	end
-	
+
 	local needle = string.lower(nameFilter)
 	return utils.filterArray(ordersArray, function(_, oc)
-		if not oc.Domain or type(oc.Domain) ~= 'string' then 
-			return false 
+		if not oc.Domain or type(oc.Domain) ~= 'string' then
+			return false
 		end
 		return string.find(string.lower(oc.Domain), needle, 1, true) ~= nil
 	end)
@@ -166,7 +169,11 @@ end
 Handlers.add('Get-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Listed-Orders'), function(msg)
 	local page = utils.parsePaginationTags(msg)
 
-	local now = math.floor(tonumber(msg.Timestamp))
+	local ts = tonumber(msg.Timestamp)
+	if ts and ts > 1e12 then
+		ts = ts / 1000
+	end
+	local now = math.floor(ts or os.time())
 	local active, ready = getListedSnapshot(now)
 	local ordersArray = {}
 	for _, oc in ipairs(active) do table.insert(ordersArray, oc) end
@@ -188,7 +195,11 @@ end)
 Handlers.add('Get-Completed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Completed-Orders'), function(msg)
 	local page = utils.parsePaginationTags(msg)
 
-	local now = math.floor(tonumber(msg.Timestamp))
+	local ts = tonumber(msg.Timestamp)
+	if ts and ts > 1e12 then
+		ts = ts / 1000
+	end
+	local now = math.floor(ts or os.time())
 	local cancelled = getCancelledSnapshot()
 	local settled = getExecutedSnapshot()
 	local _, _, expired = getListedSnapshot(now)
@@ -213,7 +224,7 @@ end)
 Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Order-By-Id'), function(msg)
 	local orderId = msg.Tags.Orderid or msg.Tags.OrderId
 	local decodeCheck, data = utils.decodeMessageData(msg.Data)
-	
+
 	if (not decodeCheck or not data) and not orderId then
 		ao.send({
 			Target = msg.From,
@@ -225,7 +236,7 @@ Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Ord
 	if data and data.OrderId then
 		orderId = data.OrderId
 	end
-	
+
 	-- Final check		-- For English auctions, prefer Settlement.WinningBid; otherwise use recorded Price
 	if not orderId then
 		ao.send({
@@ -236,7 +247,11 @@ Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Ord
 		return
 	end
 
-	local now = math.floor(tonumber(msg.Timestamp))
+	local ts = tonumber(msg.Timestamp)
+	if ts and ts > 1e12 then
+		ts = ts / 1000
+	end
+	local now = math.floor(ts or os.time())
 	local active, ready, expired = getListedSnapshot(now)
 	local listedById = {}
 	for _, oc in ipairs(active) do listedById[oc.OrderId] = oc end
@@ -288,7 +303,11 @@ Handlers.add('Get-Activity', Handlers.utils.hasMatchingTag('Action', 'Get-Activi
 		return
 	end
 
-	local now = math.floor(tonumber(msg.Timestamp))
+	local ts = tonumber(msg.Timestamp)
+	if ts and ts > 1e12 then
+		ts = ts / 1000
+	end
+	local now = math.floor(ts or os.time())
 	local active, ready, expired = getListedSnapshot(now)
 	local executed = getExecutedSnapshot()
 	local cancelled = getCancelledSnapshot()
@@ -490,6 +509,21 @@ Handlers.add('Update-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Up
 			return
 		end
 
+		-- Rebase timestamps onto process time when incoming values look relative/small
+		local ts = tonumber(msg.Timestamp)
+		if ts and ts > 1e12 then ts = ts / 1000 end
+		ts = math.floor(ts or os.time())
+		local created = tonumber(data.Order.CreatedAt)
+		local exp = tonumber(data.Order.ExpirationTime)
+		if created and exp then
+			local interval = math.floor(exp - created)
+			-- If process time is small (relative) or created looks like a small relative timestamp, rebase
+			if (ts and ts < 1000000000) or (created < 100000000) then
+				data.Order.CreatedAt = ts
+				data.Order.ExpirationTime = ts + interval
+			end
+		end
+
 		table.insert(ListedOrders, {
 			OrderId = data.Order.Id,
 			DominantToken = data.Order.DominantToken,
@@ -536,7 +570,7 @@ Handlers.add('Update-Cancelled-Orders', Handlers.utils.hasMatchingTag('Action', 
 		end
 
 		foundOrder.EndedAt = data.Order.EndedAt or data.Order.CancellationTime
-		
+
 		-- Add the order to CancelledOrders
 		table.insert(CancelledOrders, foundOrder)
 	end)

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --test --experimental-wasm-memory64 src/poc.test.mjs"
+    "test": "node --test --experimental-wasm-memory64 src/*.test.mjs"
   },
   "devDependencies": {
     "@permaweb/ao-loader": "^0.0.49"
