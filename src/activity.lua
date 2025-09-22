@@ -1,5 +1,5 @@
 local bint = require('.bint')(256)
-local json = require('json')
+local json = require('JSON')
 
 local utils = require('utils')
 
@@ -104,7 +104,7 @@ local function decorateOrder(order, status)
 	elseif status == 'expired' and oc.ExpirationTime and not oc.EndedAt then
 		oc.EndedAt = oc.ExpirationTime
 	end
-	
+
 	return oc
 end
 
@@ -113,11 +113,11 @@ local function filterOrdersByName(ordersArray, nameFilter)
 	if not nameFilter or nameFilter == '' then
 		return ordersArray
 	end
-	
+
 	local needle = string.lower(nameFilter)
 	return utils.filterArray(ordersArray, function(_, oc)
-		if not oc.Domain or type(oc.Domain) ~= 'string' then 
-			return false 
+		if not oc.Domain or type(oc.Domain) ~= 'string' then
+			return false
 		end
 		return string.find(string.lower(oc.Domain), needle, 1, true) ~= nil
 	end)
@@ -180,7 +180,7 @@ Handlers.add('Get-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-L
 	ao.send({
 		Target = msg.From,
 		Action = 'Read-Success',
-		Data = json.encode(paginatedOrders)
+		Data = json:encode(paginatedOrders)
 	})
 end)
 
@@ -205,7 +205,7 @@ Handlers.add('Get-Completed-Orders', Handlers.utils.hasMatchingTag('Action', 'Ge
 	ao.send({
 		Target = msg.From,
 		Action = 'Read-Success',
-		Data = json.encode(paginatedOrders)
+		Data = json:encode(paginatedOrders)
 	})
 end)
 
@@ -213,7 +213,7 @@ end)
 Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Order-By-Id'), function(msg)
 	local orderId = msg.Tags.Orderid or msg.Tags.OrderId
 	local decodeCheck, data = utils.decodeMessageData(msg.Data)
-	
+
 	if (not decodeCheck or not data) and not orderId then
 		ao.send({
 			Target = msg.From,
@@ -225,7 +225,7 @@ Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Ord
 	if data and data.OrderId then
 		orderId = data.OrderId
 	end
-	
+
 	-- Final check		-- For English auctions, prefer Settlement.WinningBid; otherwise use recorded Price
 	if not orderId then
 		ao.send({
@@ -265,12 +265,12 @@ Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Ord
 	local response = foundOrder
 
 	if msg.Tags.Functioninvoke or msg.Tags.FunctionInvoke then
-		msg.reply({Data = json.encode(response)})
+		msg.reply({Data = json:encode(response)})
 	else
 		ao.send({
 			Target = msg.From,
 			Action = 'Read-Success',
-			Data = json.encode(response)
+			Data = json:encode(response)
 		})
 	end
 
@@ -356,7 +356,7 @@ Handlers.add('Get-Activity', Handlers.utils.hasMatchingTag('Action', 'Get-Activi
 	ao.send({
 		Target = msg.From,
 		Action = 'Read-Success',
-		Data = json.encode({
+		Data = json:encode({
 			ListedOrders = listedWithFields,
 			ExecutedOrders = executedWithFields,
 			CancelledOrders = cancelledWithFields,
@@ -396,7 +396,7 @@ Handlers.add('Get-Order-Counts-By-Address', Handlers.utils.hasMatchingTag('Actio
 		ao.send({
 			Target = msg.From,
 			Action = 'Read-Success',
-			Data = json.encode({
+			Data = json:encode({
 				SalesByAddress = salesByAddress,
 				PurchasesByAddress = purchasesByAddress
 			})
@@ -407,7 +407,7 @@ Handlers.add('Get-Sales-By-Address', Handlers.utils.hasMatchingTag('Action', 'Ge
 	ao.send({
 		Target = msg.From,
 		Action = 'Read-Success',
-		Data = json.encode({
+ 	Data = json:encode({
 			SalesByAddress = SalesByAddress
 		})
 	})
@@ -536,7 +536,7 @@ Handlers.add('Update-Cancelled-Orders', Handlers.utils.hasMatchingTag('Action', 
 		end
 
 		foundOrder.EndedAt = data.Order.EndedAt or data.Order.CancellationTime
-		
+
 		-- Add the order to CancelledOrders
 		table.insert(CancelledOrders, foundOrder)
 	end)
@@ -678,7 +678,7 @@ Handlers.add('Get-Most-Traded-Tokens', Handlers.utils.hasMatchingTag('Action', '
 		ao.send({
 			Target = msg.From,
 			Action = 'Most-Traded-Tokens-Result',
-			Data = json.encode(result)
+ 		Data = json:encode(result)
 		})
 	end)
 
@@ -694,7 +694,7 @@ Handlers.add('Get-Activity-Lengths', Handlers.utils.hasMatchingTag('Action', 'Ge
 	ao.send({
 		Target = msg.From,
 		Action = 'Table-Lengths-Result',
-		Data = json.encode({
+		Data = json:encode({
 			ListedOrders = #ListedOrders,
 			ExecutedOrders = #ExecutedOrders,
 			CancelledOrders = #CancelledOrders,
@@ -762,7 +762,7 @@ Handlers.add('Migrate-Activity', Handlers.utils.hasMatchingTag('Action', 'Migrat
 		if #batch > 0 then
 			print('Sending ' .. orderType .. ' Batch: ' .. #batch .. ' orders starting at index ' .. startIndex)
 
-			local success, encoded = pcall(json.encode, batch)
+			local success, encoded = pcall(function() return json:encode(batch) end)
 			if not success then
 				print('Failed to encode batch: ' .. tostring(encoded))
 				return

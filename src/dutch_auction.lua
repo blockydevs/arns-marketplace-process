@@ -34,7 +34,7 @@ function dutch_auction.handleArioOrder(args, validPair, pairIndex)
 
 	-- Send order data to activity tracking process
 	local limitDataSuccess, limitData = pcall(function()
-		return json.encode({
+		return json:encode({
 			Order = {
 				Id = args.orderId,
 				DominantToken = args.dominantToken,
@@ -164,7 +164,7 @@ function dutch_auction.handleAntOrder(args, validPair, pairIndex)
 			end
 
 			args.executionPrice = tostring(currentPrice)
-			
+
 			-- Apply fees and calculate final amounts
 			local calculatedSendAmount = utils.calculateSendAmount(requiredAmount)
 			local calculatedFillAmount = utils.calculateFillAmount(fillAmount)

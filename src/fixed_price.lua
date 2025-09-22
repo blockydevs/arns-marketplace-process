@@ -49,7 +49,7 @@ function fixed_price.handleArioOrder(args, validPair, pairIndex)
 
 	-- Send order data to activity tracking process
 	local limitDataSuccess, limitData = pcall(function()
-		return json.encode({
+		return json:encode({
 			Order = {
 				Id = args.orderId,
 				DominantToken = args.dominantToken,

@@ -40,7 +40,7 @@ function utils.validateArioInTrade(dominantToken, swapToken)
 end
 
 function utils.decodeMessageData(data)
-	local status, decodedData = pcall(json.decode, data)
+	local status, decodedData = pcall(function() return json:decode(data) end)
 
 	if not status or type(decodedData) ~= 'table' then
 		return false, nil
@@ -294,7 +294,7 @@ function utils.recordMatch(args, currentOrderEntry, validPair, calculatedFillAmo
 
 	-- Send match data to activity tracking
 	local matchedDataSuccess, matchedData = pcall(function()
-		return json.encode({
+		return json:encode({
 			Order = {
 				Id = currentOrderEntry.Id,
 				MatchId = args.orderId,
@@ -371,12 +371,12 @@ function utils.paginateTableWithCursor(tableArray, cursor, cursorField, limit, s
 		or tableArray
 
 	assert(sortOrder == "asc" or sortOrder == "desc", "Invalid sortOrder: expected 'asc' or 'desc'")
-	
+
 	-- Default to sorting by CreatedAt if no sortBy is specified
 	if not sortBy then
 		sortBy = "CreatedAt"
 	end
-	
+
 	local sortFields = { { order = sortOrder, field = sortBy } }
 	if cursorField ~= nil and cursorField ~= sortBy then
 		-- Tie-breaker to guarantee deterministic pagination
@@ -546,7 +546,7 @@ function utils.safeDecodeJson(jsonString)
 	if not jsonString then
 		return nil
 	end
-	local status, result = pcall(json.decode, jsonString)
+	local status, result = pcall(function() return json:decode(jsonString) end)
 	if not status then
 		return nil
 	end

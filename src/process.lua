@@ -1,4 +1,4 @@
-local json = require('json')
+local json = require('JSON')
 
 local ucm = require('ucm')
 local utils = require('utils')
@@ -18,7 +18,8 @@ function Trusted(msg)
 	return true
 end
 
-Handlers.prepend('qualify message',
+local _prepend = Handlers.prepend or Handlers.add
+_prepend('qualify message',
 	Trusted,
 	function(msg)
 		print('This Msg is not trusted!')
@@ -30,7 +31,7 @@ Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'),
 		ao.send({
 			Target = msg.From,
 			Action = 'Read-Success',
-			Data = json.encode({
+			Data = json:encode({
 				Name = Name,
 				Orderbook = Orderbook
 			})
@@ -46,7 +47,7 @@ Handlers.add('Get-Orderbook-By-Pair', Handlers.utils.hasMatchingTag('Action', 'G
 			ao.send({
 				Target = msg.From,
 				Action = 'Read-Success',
-				Data = json.encode({ Orderbook = Orderbook[pairIndex] })
+				Data = json:encode({ Orderbook = Orderbook[pairIndex] })
 			})
 		end
 	end)
@@ -136,7 +137,7 @@ Handlers.add('Credit-Notice', Handlers.utils.hasMatchingTag('Action', 'Credit-No
 					Filters = string.format("{\"processId\":[\"%s\"]}", msg.From)
 				}
 			}).receive()
-			
+
 			local decodeCheck, domainData = utils.decodeMessageData(domainPaginatedRecords.Data)
 			local items = (decodeCheck and domainData and domainData.items) or nil
 			if not items or type(items) ~= 'table' or not items[1] or not items[1].name or not items[1].type then
@@ -183,7 +184,7 @@ Handlers.add('Cancel-Order', Handlers.utils.hasMatchingTag('Action', 'Cancel-Ord
 		local activityQuery = ao.send({
 			Target = ACTIVITY_PROCESS,
 			Action = 'Get-Order-By-Id',
-			Data = json.encode({ OrderId = data.OrderId }),
+			Data = json:encode({ OrderId = data.OrderId }),
 			Tags = {
 				Action = 'Get-Order-By-Id',
 				OrderId = data.OrderId,
@@ -268,7 +269,7 @@ Handlers.add('Cancel-Order', Handlers.utils.hasMatchingTag('Action', 'Cancel-Ord
 
 			-- Notify activity process of cancellation
 			local cancelledDataSuccess, cancelledData = pcall(function()
-				return json.encode({
+				return json:encode({
 					Order = {
 						Id = data.OrderId,
 						DominantToken = activityData.DominantToken,
@@ -334,7 +335,7 @@ Handlers.add('Read-Orders', Handlers.utils.hasMatchingTag('Action', 'Read-Orders
 			ao.send({
 				Target = msg.From,
 				Action = 'Read-Orders-Response',
-				Data = json.encode(readOrders)
+				Data = json:encode(readOrders)
 			})
 		end
 	end
@@ -346,7 +347,7 @@ Handlers.add('Read-Pair', Handlers.utils.hasMatchingTag('Action', 'Read-Pair'), 
 		ao.send({
 			Target = msg.From,
 			Action = 'Read-Success',
-			Data = json.encode({
+			Data = json:encode({
 				Pair = tostring(pairIndex),
 				Orderbook =
 					Orderbook[pairIndex]
@@ -358,7 +359,7 @@ end)
 Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-Auction'), function(msg)
 	print('Settling auctionXXX')
 	local decodeCheck, data = utils.decodeMessageData(msg.Data)
-	
+
 	if not decodeCheck or not data.OrderId then
 		ao.send({
 			Target = msg.From,
@@ -367,7 +368,7 @@ Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-A
 		})
 		return
 	end
-	
+
 	-- Check if order is ready for settlement by querying activity process
 	local activityQuery = ao.send({
 		Target = ACTIVITY_PROCESS,
@@ -378,7 +379,7 @@ Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-A
 			Functioninvoke = "true"
 		}
 	}).receive()
-	
+
 	local activityDecodeCheck, activityData = utils.decodeMessageData(activityQuery.Data)
 	if not activityDecodeCheck or not activityData then
 		ao.send({
@@ -388,7 +389,7 @@ Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-A
 		})
 		return
 	end
-	
+
 	-- Check if order is ready for settlement
 	print('Activity data: ')
 	print(activityData)
@@ -396,15 +397,15 @@ Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-A
 		ao.send({
 			Target = msg.From,
 			Action = 'Settlement-Error',
-			Tags = { 
-				Status = 'Error', 
+			Tags = {
+				Status = 'Error',
 				Message = 'Order is not ready for settlement. Status: ' .. tostring(activityData.Status),
 				CurrentStatus = tostring(activityData.Status)
 			}
 		})
 		return
 	end
-	
+
 	local settleArgs = {
 		orderId = data.OrderId,
 		sender = msg.From,
@@ -413,7 +414,7 @@ Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-A
 		dominantToken = data.DominantToken,
 		swapToken = data.SwapToken
 	}
-	
+
 	ucm.settleAuction(settleArgs)
 	print('Settled auction')
 end)

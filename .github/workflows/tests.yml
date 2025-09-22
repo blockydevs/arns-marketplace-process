@@ -18,6 +18,11 @@ jobs:
             -   name: Checkout code
                 uses: actions/checkout@v4
 
+            -   name: Run Activity tests
+                run: |
+                    cd tests
+                    lua activity_tests.lua
+
             -   name: Run UCM tests
                 run: |
                     cd tests
@@ -27,6 +32,11 @@ jobs:
                 run: |
                     cd tests
                     lua dutch_tests.lua
+
+            -   name: Run English auction tests
+                run: |
+                    cd tests
+                    lua english_tests.lua
 
             -   name: Run general tests
                 run: |

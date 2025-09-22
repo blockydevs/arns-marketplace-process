@@ -1,5 +1,6 @@
 local bint = require('.bint')(256)
 local json = require('JSON')
+json = json:new()
 
 local utils = require('utils')
 
@@ -44,7 +45,7 @@ local function validateBidAmount(bidAmount, currentHighestBid, minimumBid)
 		if bint(bidAmount) <= bint(currentHighestBid) then
 			return false, 'Bids equal to or lower than the current bid are not allowed'
 		end
-		
+
 		-- Minimum Bid Increment: The next bid must be at least 1 ARIO higher than the current highest bid
 		local minimumIncrement = bint(1)
 		if bint(bidAmount) < bint(currentHighestBid) + minimumIncrement then
@@ -72,7 +73,7 @@ local function returnPreviousBid(orderId, previousBidder, previousAmount, biddin
 				Quantity = tostring(previousAmount)
 			}
 		})
-		
+
 		-- Notify previous bidder of refund
 		ao.send({
 			Target = previousBidder,
@@ -101,7 +102,7 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 		})
 		return
 	end
-	
+
 	local currentOrders = Orderbook[pairIndex].Orders
 	local targetOrder = nil
 
@@ -130,7 +131,7 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 		local activityQuery = ao.send({
 		Target = ACTIVITY_PROCESS,
 		Action = 'Get-Order-By-Id',
-		Data = json.encode({ OrderId = targetOrder.Id }),
+		Data = json:encode({ OrderId = targetOrder.Id }),
 		Tags = {
 			Action = 'Get-Order-By-Id',
 			OrderId = targetOrder.Id,
@@ -167,7 +168,7 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 	-- Get existing auction bids for validation
 	local targetAuctionId = args.requestedOrderId or args.orderId
 	local existingBids = getExistingAuctionBids(targetAuctionId)
-		
+
 	-- Validate bid amount - use args.quantity for ARIO-dominant orders (buying ANT)
 	local bidAmount = args.quantity -- The amount of ARIO tokens sent by the user
 
@@ -179,14 +180,14 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 		existingBids and existingBids.HighestBid or nil,
 		minimumStartingPrice
 	)
-	
+
 	if not isValidBid then
 		utils.handleError({
 			Target = args.sender,
 			Action = 'Validation-Error',
 			Message = bidError,
 			Quantity = args.quantity,
-			TransferToken = args.dominantToken,	
+			TransferToken = args.dominantToken,
 			OrderGroupId = args.orderGroupId
 		})
 		return
@@ -194,7 +195,7 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 
 	-- Get auction bids (only after validation passes)
 	local auctionBids = getAuctionBids(targetAuctionId)
-		
+
 	-- Return previous highest bid if it exists
 	if auctionBids.HighestBidder and auctionBids.HighestBid then
 				returnPreviousBid(targetAuctionId, auctionBids.HighestBidder, auctionBids.HighestBid, args.dominantToken)
@@ -207,16 +208,16 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 		Timestamp = args.createdAt,
 		OrderId = targetAuctionId
 	}
-	
+
 	table.insert(auctionBids.Bids, newBid)
-		
+
 	-- Update highest bid
 	auctionBids.HighestBid = tostring(bidAmount) -- Use the quantity sent by user
 	auctionBids.HighestBidder = args.sender
-	
+
 	-- Send bid data to activity tracking process
 	local bidDataSuccess, bidData = pcall(function()
-		return json.encode({
+		return json:encode({
 			Bid = {
 				OrderId = targetAuctionId,
 				Bidder = args.sender,
@@ -257,7 +258,7 @@ end
 function english_auction.settleAuction(args)
 	local orderId = args.orderId
 	local auctionBids = getExistingAuctionBids(orderId)
-	
+
 	-- Check if auction has bids
 	if not auctionBids or not auctionBids.HighestBidder then
 		utils.handleError({
@@ -315,7 +316,7 @@ function english_auction.settleAuction(args)
 
 	-- Execute the settlement
 	-- For English auction settlement: seller gets ARIO tokens, buyer gets ANT tokens
-	-- The Orderbook pair is [ANT_token_process, ARIO_token_process] 
+	-- The Orderbook pair is [ANT_token_process, ARIO_token_process]
 	-- We need validPair to be [ARIO_token_process, ANT_token_process] for correct transfers
 	local validPair = {Orderbook[targetPairIndex].Pair[2], Orderbook[targetPairIndex].Pair[1]} -- Swap the order to get [ARIO, ANT]
 	local winningBidAmount = bint(auctionBids.HighestBid)
@@ -351,7 +352,7 @@ function english_auction.settleAuction(args)
 
 	-- Send settlement data to activity tracking
 	local settlementDataSuccess, settlementData = pcall(function()
-		return json.encode({
+		return json:encode({
 			Settlement = settlement
 		})
 	end)
@@ -364,7 +365,7 @@ function english_auction.settleAuction(args)
 
 	-- Also mark order as executed/completed in activity so it appears in completed orders
 	local executedDataSuccess, executedData = pcall(function()
-		return json.encode({
+		return json:encode({
 			Order = {
 				Id = orderId,
 				DominantToken = validPair[2],
@@ -425,7 +426,7 @@ end
 function english_auction.getBidHistory(args)
 	local orderId = args.orderId
 	local auctionBids = getAuctionBids(orderId)
-	
+
 	ao.send({
 		Target = args.sender,
 		Action = 'Bid-History',
@@ -435,7 +436,7 @@ function english_auction.getBidHistory(args)
 			HighestBid = auctionBids.HighestBid or '0',
 			HighestBidder = auctionBids.HighestBidder or 'None'
 		},
-		Data = json.encode(auctionBids.Bids)
+		Data = json:encode(auctionBids.Bids)
 	})
 end
 
@@ -460,7 +461,7 @@ function english_auction.handleArioOrder(args, validPair, pairIndex)
 
 	-- Send order data to activity tracking process
 	local limitDataSuccess, limitData = pcall(function()
-		return json.encode({
+		return json:encode({
 			Order = {
 				Id = args.orderId,
 				DominantToken = args.dominantToken,
