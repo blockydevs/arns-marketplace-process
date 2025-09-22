@@ -78,6 +78,10 @@ const response = await message({
 });
 ```
 
+### Technical Specification
+
+For more detailed information, see the [Technical Overview in Specs](spec.md).
+
 ## Testing
 
 ### Prerequisites
