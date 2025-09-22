@@ -32,3 +32,25 @@ jobs:
                 run: |
                     cd tests
                     lua tests.lua
+
+    ao-loader-tests:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+
+            -   name: Setup Node.js
+                uses: actions/setup-node@v4
+                with:
+                    node-version: 20
+
+            -   name: Install dependencies
+                run: |
+                    cd tests/e2e
+                    npm ci
+
+            -   name: Run ao-loader tests
+                run: |
+                    cd tests/e2e
+                    npm test
