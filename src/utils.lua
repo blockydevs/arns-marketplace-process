@@ -1,7 +1,69 @@
-local json = require('JSON')
 local bint = require('.bint')(256)
 
+local ok, json = pcall(require, "JSON")
+if not ok then ok, json = pcall(require, "json") end
+
+local json_adapter = {}
+
+-- Unified JSON adapter that works with multiple popular Lua JSON libs
+-- Supports:
+--  - rxi/json.lua (json.encode(tbl), json.decode(str))
+--  - JSON.lua / JSON4Lua (json:encode(tbl), json:decode(str))
+--  - dkjson (json.encode(tbl), json.decode(str))
+-- We detect at runtime by trying the available call styles with pcall and caching the working ones.
+
+local function resolve_json_impl()
+	local impl = { encode = nil, decode = nil }
+
+	-- Resolve encode
+	impl.encode = function(a, b)
+		-- Support both json.encode(x) and json:encode(x) calls by normalizing args
+		local tbl = (b ~= nil) and b or a
+		-- Try dot-call first
+		if json and type(json) == "table" and type(json.encode) == "function" then
+			local ok1, res1 = pcall(function() return json.encode(tbl) end)
+			if ok1 then return res1 end
+			-- Try method-call style
+			local ok2, res2 = pcall(function() return json:encode(tbl) end)
+			if ok2 then return res2 end
+		end
+		-- Some libs expose Encode
+		if json and type(json) == "table" and type(json.Encode) == "function" then
+			local ok3, res3 = pcall(function() return json.Encode(tbl) end)
+			if ok3 then return res3 end
+		end
+		error("Incompatible JSON library: encode not supported")
+	end
+
+	-- Resolve decode
+	impl.decode = function(a, b)
+		-- Support both json.decode(x) and json:decode(x)
+		local str = (b ~= nil) and b or a
+		if json and type(json) == "table" then
+			if type(json.decode) == "function" then
+				local ok1, res1 = pcall(function() return json.decode(str) end)
+				if ok1 then return res1 end
+				local ok2, res2 = pcall(function() return json:decode(str) end)
+				if ok2 then return res2 end
+			end
+			if type(json.Decode) == "function" then
+				local ok3, res3 = pcall(function() return json.Decode(str) end)
+				if ok3 then return res3 end
+			end
+		end
+		error("Incompatible JSON library: decode not supported")
+	end
+
+	return impl
+end
+
+json_adapter = resolve_json_impl()
+
 local utils = {}
+
+utils.bint = bint
+utils.json = json_adapter
+
 if not AccruedFeesAmount then AccruedFeesAmount = 0 end
 
 -- CHANGEME
