@@ -1,8 +1,9 @@
 package.path = package.path .. ';../src/?.lua'
 
-local ucm = require('ucm')
 local utils = require('utils')
-local JSON = require('JSON')
+local json = utils.json
+
+local ucm = require('ucm')
 
 -- PIXL PROCESS: DM3FoZUq_yebASPhgd8pEIRIzDW6muXEhxz5-JwbZwo
 
@@ -674,11 +675,6 @@ utils.test('Full execution removes from CurrentListings',
 
 utils.test('Cancel order removes from CurrentListings',
 	function()
-
-		local JSON_Module = require('JSON')
-		package.loaded['json'] = JSON_Module
-
-
 		require('process')
 
 		ACTIVITY_PROCESS = '7_psKu3QHwzc2PFCJk2lEwyitLJbz6Vj7hOcltOulj4'
@@ -701,7 +697,7 @@ utils.test('Cancel order removes from CurrentListings',
 		local original_ao_send = ao.send
 		ao.send = function(msg)
 			if msg.Action == 'Get-Order-By-Id' then
-				return { receive = function() return { Data = JSON:encode({ Sender = 'SaXnsUgxJLkJRghWQOUs9-wB0npVviewTkUbh2Yk64M', Status = 'active' }) } end }
+				return { receive = function() return { Data = json:encode({ Sender = 'SaXnsUgxJLkJRghWQOUs9-wB0npVviewTkUbh2Yk64M', Status = 'active' }) } end }
 			else
 				original_ao_send(msg)
 			end
@@ -710,7 +706,7 @@ utils.test('Cancel order removes from CurrentListings',
 		Handlers['Cancel-Order']({
 			From = 'SaXnsUgxJLkJRghWQOUs9-wB0npVviewTkUbh2Yk64M',
 			Tags = { Action = 'Cancel-Order' },
-			Data = JSON:encode({ OrderId = 'N5vr71SXaEYsdVoVCEB5qOTjHNwyQVwGvJxBh_kgTbE' })
+			Data = json:encode({ OrderId = 'N5vr71SXaEYsdVoVCEB5qOTjHNwyQVwGvJxBh_kgTbE' })
 		})
 
 		ao.send = original_ao_send

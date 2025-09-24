@@ -1,7 +1,7 @@
-local bint = require('.bint')(256)
-local json = require('JSON')
-
 local utils = require('utils')
+local bint = utils.bint
+local json = utils.json
+
 local fixed_price = require('fixed_price')
 local dutch_auction = require('dutch_auction')
 local english_auction = require('english_auction')

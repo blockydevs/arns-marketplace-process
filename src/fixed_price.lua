@@ -1,7 +1,6 @@
-local bint = require('.bint')(256)
-local json = require('JSON')
-
 local utils = require('utils')
+local bint = utils.bint
+local json = utils.json
 
 local fixed_price = {}
 
@@ -49,7 +48,7 @@ function fixed_price.handleArioOrder(args, validPair, pairIndex)
 
 	-- Send order data to activity tracking process
 	local limitDataSuccess, limitData = pcall(function()
-		return json:encode({
+		return json.encode({
 			Order = {
 				Id = args.orderId,
 				DominantToken = args.dominantToken,

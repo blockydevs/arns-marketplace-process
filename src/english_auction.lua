@@ -1,8 +1,6 @@
-local bint = require('.bint')(256)
-local json = require('JSON')
-json = json:new()
-
 local utils = require('utils')
+local bint = utils.bint
+local json = utils.json
 
 local english_auction = {}
 
@@ -131,7 +129,7 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 		local activityQuery = ao.send({
 		Target = ACTIVITY_PROCESS,
 		Action = 'Get-Order-By-Id',
-		Data = json:encode({ OrderId = targetOrder.Id }),
+		Data = json.encode({ OrderId = targetOrder.Id }),
 		Tags = {
 			Action = 'Get-Order-By-Id',
 			OrderId = targetOrder.Id,
@@ -217,7 +215,7 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 
 	-- Send bid data to activity tracking process
 	local bidDataSuccess, bidData = pcall(function()
-		return json:encode({
+		return json.encode({
 			Bid = {
 				OrderId = targetAuctionId,
 				Bidder = args.sender,
@@ -352,7 +350,7 @@ function english_auction.settleAuction(args)
 
 	-- Send settlement data to activity tracking
 	local settlementDataSuccess, settlementData = pcall(function()
-		return json:encode({
+		return json.encode({
 			Settlement = settlement
 		})
 	end)
@@ -365,7 +363,7 @@ function english_auction.settleAuction(args)
 
 	-- Also mark order as executed/completed in activity so it appears in completed orders
 	local executedDataSuccess, executedData = pcall(function()
-		return json:encode({
+		return json.encode({
 			Order = {
 				Id = orderId,
 				DominantToken = validPair[2],
@@ -436,7 +434,7 @@ function english_auction.getBidHistory(args)
 			HighestBid = auctionBids.HighestBid or '0',
 			HighestBidder = auctionBids.HighestBidder or 'None'
 		},
-		Data = json:encode(auctionBids.Bids)
+		Data = json.encode(auctionBids.Bids)
 	})
 end
 
@@ -461,7 +459,7 @@ function english_auction.handleArioOrder(args, validPair, pairIndex)
 
 	-- Send order data to activity tracking process
 	local limitDataSuccess, limitData = pcall(function()
-		return json:encode({
+		return json.encode({
 			Order = {
 				Id = args.orderId,
 				DominantToken = args.dominantToken,

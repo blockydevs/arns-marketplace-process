@@ -1,7 +1,8 @@
-local json = require('JSON')
+local utils = require('utils')
+local bint = utils.bint
+local json = utils.json
 
 local ucm = require('ucm')
-local utils = require('utils')
 
 -- CHANGEME
 ACTIVITY_PROCESS = 'Jj8LhgFLmCE_BAMys_zoTDRx8eYXsSl3-BMBIov8n9E'
@@ -31,7 +32,7 @@ Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'),
 		ao.send({
 			Target = msg.From,
 			Action = 'Read-Success',
-			Data = json:encode({
+			Data = json.encode({
 				Name = Name,
 				Orderbook = Orderbook
 			})
@@ -47,7 +48,7 @@ Handlers.add('Get-Orderbook-By-Pair', Handlers.utils.hasMatchingTag('Action', 'G
 			ao.send({
 				Target = msg.From,
 				Action = 'Read-Success',
-				Data = json:encode({ Orderbook = Orderbook[pairIndex] })
+				Data = json.encode({ Orderbook = Orderbook[pairIndex] })
 			})
 		end
 	end)
@@ -184,7 +185,7 @@ Handlers.add('Cancel-Order', Handlers.utils.hasMatchingTag('Action', 'Cancel-Ord
 		local activityQuery = ao.send({
 			Target = ACTIVITY_PROCESS,
 			Action = 'Get-Order-By-Id',
-			Data = json:encode({ OrderId = data.OrderId }),
+			Data = json.encode({ OrderId = data.OrderId }),
 			Tags = {
 				Action = 'Get-Order-By-Id',
 				OrderId = data.OrderId,
@@ -269,7 +270,7 @@ Handlers.add('Cancel-Order', Handlers.utils.hasMatchingTag('Action', 'Cancel-Ord
 
 			-- Notify activity process of cancellation
 			local cancelledDataSuccess, cancelledData = pcall(function()
-				return json:encode({
+				return json.encode({
 					Order = {
 						Id = data.OrderId,
 						DominantToken = activityData.DominantToken,
@@ -335,7 +336,7 @@ Handlers.add('Read-Orders', Handlers.utils.hasMatchingTag('Action', 'Read-Orders
 			ao.send({
 				Target = msg.From,
 				Action = 'Read-Orders-Response',
-				Data = json:encode(readOrders)
+				Data = json.encode(readOrders)
 			})
 		end
 	end
@@ -347,7 +348,7 @@ Handlers.add('Read-Pair', Handlers.utils.hasMatchingTag('Action', 'Read-Pair'), 
 		ao.send({
 			Target = msg.From,
 			Action = 'Read-Success',
-			Data = json:encode({
+			Data = json.encode({
 				Pair = tostring(pairIndex),
 				Orderbook =
 					Orderbook[pairIndex]

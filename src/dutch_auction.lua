@@ -1,6 +1,6 @@
 local utils = require('utils')
-local bint = require('.bint')(256)
-local json = require('JSON')
+local bint = utils.bint
+local json = utils.json
 
 local dutch_auction = {}
 
@@ -34,7 +34,7 @@ function dutch_auction.handleArioOrder(args, validPair, pairIndex)
 
 	-- Send order data to activity tracking process
 	local limitDataSuccess, limitData = pcall(function()
-		return json:encode({
+		return json.encode({
 			Order = {
 				Id = args.orderId,
 				DominantToken = args.dominantToken,

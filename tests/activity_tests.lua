@@ -1,7 +1,7 @@
 package.path = package.path .. ';../src/?.lua'
 
 local utils = require('utils')
-local json = require('JSON')
+local json = utils.json
 
 -- Mock ao.send for testing
 local sentMessages = {}

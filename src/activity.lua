@@ -1,7 +1,6 @@
-local bint = require('.bint')(256)
-local json = require('JSON')
-
 local utils = require('utils')
+local bint = utils.bint
+local json = utils.json
 
 UCM_PROCESS = 'a3jqBgXGAqefY4EHqkMwXhkBSFxZfzVdLU1oMUTQ-1M'
 
@@ -180,7 +179,7 @@ Handlers.add('Get-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-L
 	ao.send({
 		Target = msg.From,
 		Action = 'Read-Success',
-		Data = json:encode(paginatedOrders)
+		Data = json.encode(paginatedOrders)
 	})
 end)
 
@@ -205,7 +204,7 @@ Handlers.add('Get-Completed-Orders', Handlers.utils.hasMatchingTag('Action', 'Ge
 	ao.send({
 		Target = msg.From,
 		Action = 'Read-Success',
-		Data = json:encode(paginatedOrders)
+		Data = json.encode(paginatedOrders)
 	})
 end)
 
@@ -265,12 +264,12 @@ Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Ord
 	local response = foundOrder
 
 	if msg.Tags.Functioninvoke or msg.Tags.FunctionInvoke then
-		msg.reply({Data = json:encode(response)})
+		msg.reply({Data = json.encode(response)})
 	else
 		ao.send({
 			Target = msg.From,
 			Action = 'Read-Success',
-			Data = json:encode(response)
+			Data = json.encode(response)
 		})
 	end
 
@@ -356,7 +355,7 @@ Handlers.add('Get-Activity', Handlers.utils.hasMatchingTag('Action', 'Get-Activi
 	ao.send({
 		Target = msg.From,
 		Action = 'Read-Success',
-		Data = json:encode({
+		Data = json.encode({
 			ListedOrders = listedWithFields,
 			ExecutedOrders = executedWithFields,
 			CancelledOrders = cancelledWithFields,
@@ -396,7 +395,7 @@ Handlers.add('Get-Order-Counts-By-Address', Handlers.utils.hasMatchingTag('Actio
 		ao.send({
 			Target = msg.From,
 			Action = 'Read-Success',
-			Data = json:encode({
+			Data = json.encode({
 				SalesByAddress = salesByAddress,
 				PurchasesByAddress = purchasesByAddress
 			})
@@ -407,7 +406,7 @@ Handlers.add('Get-Sales-By-Address', Handlers.utils.hasMatchingTag('Action', 'Ge
 	ao.send({
 		Target = msg.From,
 		Action = 'Read-Success',
- 	Data = json:encode({
+ 	Data = json.encode({
 			SalesByAddress = SalesByAddress
 		})
 	})
@@ -678,7 +677,7 @@ Handlers.add('Get-Most-Traded-Tokens', Handlers.utils.hasMatchingTag('Action', '
 		ao.send({
 			Target = msg.From,
 			Action = 'Most-Traded-Tokens-Result',
- 		Data = json:encode(result)
+ 		Data = json.encode(result)
 		})
 	end)
 
@@ -694,7 +693,7 @@ Handlers.add('Get-Activity-Lengths', Handlers.utils.hasMatchingTag('Action', 'Ge
 	ao.send({
 		Target = msg.From,
 		Action = 'Table-Lengths-Result',
-		Data = json:encode({
+		Data = json.encode({
 			ListedOrders = #ListedOrders,
 			ExecutedOrders = #ExecutedOrders,
 			CancelledOrders = #CancelledOrders,
@@ -762,7 +761,7 @@ Handlers.add('Migrate-Activity', Handlers.utils.hasMatchingTag('Action', 'Migrat
 		if #batch > 0 then
 			print('Sending ' .. orderType .. ' Batch: ' .. #batch .. ' orders starting at index ' .. startIndex)
 
-			local success, encoded = pcall(function() return json:encode(batch) end)
+			local success, encoded = pcall(function() return json.encode(batch) end)
 			if not success then
 				print('Failed to encode batch: ' .. tostring(encoded))
 				return
