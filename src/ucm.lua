@@ -1,5 +1,4 @@
 local bint = require('.bint')(256)
-local json = require('JSON')
 
 local utils = require('utils')
 local fixed_price = require('fixed_price')
@@ -303,7 +302,6 @@ function ucm.createOrder(args)
 	print("DEBUG: createdAt: " .. (args.createdAt or "nil"))
 
 	-- Validate order parameters
-	-- TODO: Order type is added, but not used yet - add it's usage with a new order type
 	local validPair = validateOrderParams(args)
 	if not validPair then
 		print("DEBUG: Order validation failed")

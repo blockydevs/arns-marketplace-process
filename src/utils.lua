@@ -25,12 +25,6 @@ function utils.isArioToken(tokenAddress)
 	return tokenAddress == ARIO_TOKEN_PROCESS_ID
 end
 
-function utils.validateArioSwapToken(tokenAddress)
-	-- Allow ARIO tokens in both dominant and swap positions
-	-- This enables both selling for ARIO and buying with ARIO
-	return true, nil
-end
-
 function utils.validateArioInTrade(dominantToken, swapToken)
 	-- At least one of the tokens in the trade must be ARIO
 	if dominantToken == ARIO_TOKEN_PROCESS_ID or swapToken == ARIO_TOKEN_PROCESS_ID then

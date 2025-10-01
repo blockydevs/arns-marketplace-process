@@ -53,19 +53,6 @@ local function applyEnglishAuctionFields(orderCopy)
 	return orderCopy
 end
 
-
--- Build a normalized order response with optional status and english auction fields
-local function buildOrderResponse(order, status)
-	local oc = utils.deepCopy(order)
-	if status then
-		oc.Status = status
-	end
-	oc = normalizeOrderTimestamps(oc)
-	oc = applyEnglishAuctionFields(oc)
-	return oc
-end
-
-
 -- Pure status computation for orders currently in ListedOrders
 local function computeListedStatus(order, now)
 	local status = 'active'
@@ -708,7 +695,6 @@ Handlers.add('Migrate-Activity-Dryrun', Handlers.utils.hasMatchingTag('Action', 
 	local orderTable = {}
 	local orderType = msg.Tags['Order-Type']
 	local stepBy = tonumber(msg.Tags['Step-By'])
-	local ordersToUse
 	if orderType == 'ListedOrders' then
 		orderTable = table.move(
 			ListedOrders,
