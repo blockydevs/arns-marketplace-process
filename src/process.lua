@@ -315,8 +315,6 @@ Handlers.add('Read-Orders', Handlers.utils.hasMatchingTag('Action', 'Read-Orders
 		local readOrders = {}
 		local pairIndex = ucm.getPairIndex({ msg.Tags.DominantToken, msg.Tags.SwapToken })
 
-		print('Pair index: ' .. pairIndex)
-
 		if pairIndex > -1 then
 			for i, order in ipairs(Orderbook[pairIndex].Orders) do
 				if not msg.Tags.Creator or order.Creator == msg.Tags.Creator then
@@ -356,7 +354,6 @@ Handlers.add('Read-Pair', Handlers.utils.hasMatchingTag('Action', 'Read-Pair'), 
 end)
 
 Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-Auction'), function(msg)
-	print('Settling auctionXXX')
 	local decodeCheck, data = utils.decodeMessageData(msg.Data)
 	
 	if not decodeCheck or not data.OrderId then
@@ -390,8 +387,6 @@ Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-A
 	end
 	
 	-- Check if order is ready for settlement
-	print('Activity data: ')
-	print(activityData)
 	if activityData.Status ~= 'ready-for-settlement' then
 		ao.send({
 			Target = msg.From,
@@ -415,7 +410,6 @@ Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-A
 	}
 	
 	ucm.settleAuction(settleArgs)
-	print('Settled auction')
 end)
 
 Handlers.add('Withdraw-Fees', Handlers.utils.hasMatchingTag('Action', 'Withdraw-Fees'), function(msg)

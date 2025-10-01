@@ -626,5 +626,3 @@ utils.test('Get-Executed-Orders should send response to correct target',
 		action = 'Read-Success'
 	}
 )
-
-print('Activity tests completed!')

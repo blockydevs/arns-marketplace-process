@@ -412,14 +412,6 @@ Handlers.add('Update-Executed-Orders', Handlers.utils.hasMatchingTag('Action', '
 			return
 		end
 
-		-- Debug: warn when critical executed fields are missing in payload
-		if not data.Order.Receiver then
-			print('WARN(Update-Executed-Orders): Receiver is nil for OrderId ' .. tostring(data.Order.Id))
-		end
-		if not data.Order.Price then
-			print('WARN(Update-Executed-Orders): Price is nil for OrderId ' .. tostring(data.Order.Id))
-		end
-
 		-- Search for the order in ListedOrders
 		local foundOrder = nil
 		-- Find the order in ListedOrders and remove it
@@ -444,13 +436,6 @@ Handlers.add('Update-Executed-Orders', Handlers.utils.hasMatchingTag('Action', '
 		foundOrder.Quantity = data.Order.Quantity or foundOrder.Quantity
 		foundOrder.Price = data.Order.Price or foundOrder.Price
 
-		-- Debug: warn if after merge Receiver/Price are still nil
-		if not foundOrder.Receiver then
-			print('WARN(Update-Executed-Orders): Merged order still has nil Receiver for OrderId ' .. tostring(data.Order.Id))
-		end
-		if not foundOrder.Price then
-			print('WARN(Update-Executed-Orders): Merged order still has nil Price for OrderId ' .. tostring(data.Order.Id))
-		end
 		-- Add the order to ExecutedOrders
 		table.insert(ExecutedOrders, foundOrder)
 
@@ -625,8 +610,6 @@ Handlers.add('Get-Volume', Handlers.utils.hasMatchingTag('Action', 'Get-Volume')
 				totalVolume = totalVolume + quantity * price
 			end
 		end
-
-		print('Total Volume: ' .. tostring(totalVolume))
 
 		ao.send({
 			Target = msg.From,

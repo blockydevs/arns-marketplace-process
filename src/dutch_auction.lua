@@ -87,7 +87,6 @@ function dutch_auction.handleArioOrder(args, validPair, pairIndex)
 end
 
 function dutch_auction.handleAntOrder(args, validPair, pairIndex)
-	print("handleAntOrder")
 	local currentOrders = Orderbook[pairIndex].Orders
 	local matches = {}
 	local matchedOrderIndex = nil
@@ -110,29 +109,23 @@ function dutch_auction.handleAntOrder(args, validPair, pairIndex)
 			goto continue
 		end
 
-		print("CP1")
 		-- Calculate current price based on time passed since order creation
 		local timePassed = bint(args.createdAt) - bint(currentOrderEntry.DateCreated)
-		print("timePassed", timePassed)
 		local intervalsPassed = math.floor((timePassed) / bint(currentOrderEntry.DecreaseInterval))
 		local intervalsBint = bint(intervalsPassed)
 		local decreaseStepBint = bint(currentOrderEntry.DecreaseStep)
 		local priceReduction = intervalsBint * decreaseStepBint
 		local currentPrice = bint(currentOrderEntry.Price) - priceReduction
-		print("CP2")
 		-- Ensure price doesn't go below minimum
 		if currentPrice < bint(currentOrderEntry.MinimumPrice) then
 			currentPrice = bint(currentOrderEntry.MinimumPrice)
 		end
-		print("CP3")
 
 		-- Check if the user sent enough ARIO to pay for 1 ANT token at the current Dutch auction price
 		if bint(args.quantity) >= currentPrice then
 			local fillAmount = bint(1) -- 1 ANT token (always 1 for ANT orders)
-			print("CP4")
 			-- Validate we have a valid fill amount
 			if fillAmount <= bint(0) then
-				print("CP5")
 				utils.handleError({
 					Target = args.sender,
 					Action = 'Order-Error',
