@@ -418,8 +418,6 @@ Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-A
 	print('Settled auction')
 end)
 
-Handlers.add('Debit-Notice', Handlers.utils.hasMatchingTag('Action', 'Debit-Notice'), function(msg) end)
-
 Handlers.add('Withdraw-Fees', Handlers.utils.hasMatchingTag('Action', 'Withdraw-Fees'), function(msg)
 	-- Only the process owner can withdraw fees
 	if msg.From ~= msg.Owner then
