@@ -11,9 +11,9 @@ This specification describes the ARNS Marketplace's functionality, including ord
 
 1. **ARNS Tokens**: Unique tokens representing ARNS domains on the permaweb.
 2. **Order Book**: The data structure that stores active buy and sell orders for trading ARNS tokens.
-3. **Swap Token**: A token used in exchange for ARNS tokens. The default swap token is defined as `DEFAULT_SWAP_TOKEN`.
+3. **Swap Token**: A token used in exchange for ARNS tokens. The default swap token is defined as `ARIO_TOKEN_PROCESS_ID`.
 
-[//]: # (@TODO update DEFAULT_SWAP_TOKEN)
+[//]: # (@TODO update ARIO_TOKEN_PROCESS_ID)
 
 ---
 

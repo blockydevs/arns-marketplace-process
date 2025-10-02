@@ -106,7 +106,7 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 	local targetOrder = nil
 
 	-- Find the English auction order to bid on
-	for i, order in ipairs(currentOrders) do
+	for _, order in ipairs(currentOrders) do
 				if order.OrderType == 'english' and order.Id == (args.requestedOrderId or args.orderId) then
 			targetOrder = order
 						break
@@ -315,7 +315,7 @@ function english_auction.settleAuction(args)
 
 	-- Execute the settlement
 	-- For English auction settlement: seller gets ARIO tokens, buyer gets ANT tokens
-	-- The Orderbook pair is [ANT_token_process, ARIO_token_process] 
+	-- The Orderbook pair is [ANT_token_process, ARIO_token_process]
 	-- We need validPair to be [ARIO_token_process, ANT_token_process] for correct transfers
 	local validPair = {Orderbook[targetPairIndex].Pair[2], Orderbook[targetPairIndex].Pair[1]} -- Swap the order to get [ARIO, ANT]
 	local winningBidAmount = bint(auctionBids.HighestBid)
@@ -418,24 +418,6 @@ function english_auction.settleAuction(args)
 			Message = 'Auction settled successfully!',
 			['X-Group-ID'] = args.orderGroupId
 		}
-	})
-end
-
--- Helper function to get auction bid history
-function english_auction.getBidHistory(args)
-	local orderId = args.orderId
-	local auctionBids = getAuctionBids(orderId)
-	
-	ao.send({
-		Target = args.sender,
-		Action = 'Bid-History',
-		Tags = {
-			OrderId = orderId,
-			TotalBids = tostring(#auctionBids.Bids),
-			HighestBid = auctionBids.HighestBid or '0',
-			HighestBidder = auctionBids.HighestBidder or 'None'
-		},
-		Data = json.encode(auctionBids.Bids)
 	})
 end
 
