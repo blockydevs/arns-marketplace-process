@@ -19,16 +19,32 @@ jobs:
                 uses: actions/checkout@v4
 
             -   name: Run UCM tests
+                if: ${{ always() }}
                 run: |
                     cd tests
                     lua ucm_tests.lua
 
             -   name: Run Dutch auction tests
+                if: ${{ always() }}
                 run: |
                     cd tests
                     lua dutch_tests.lua
 
             -   name: Run general tests
+                if: ${{ always() }}
                 run: |
                     cd tests
                     lua tests.lua
+
+            -   name: Run activity tests
+                if: ${{ always() }}
+                run: |
+                    cd tests
+                    lua activity_tests.lua
+
+            -   name: Run english tests
+                if: ${{ always() }}
+                run: |
+                    set -euo pipefail
+                    cd tests
+                    lua english_tests.lua

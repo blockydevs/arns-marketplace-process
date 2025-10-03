@@ -47,7 +47,7 @@ local function validateBidAmount(bidAmount, currentHighestBid, minimumBid)
 		
 		-- Minimum Bid Increment: The next bid must be at least 1 ARIO higher than the current highest bid
 		local minimumIncrement = bint(1)
-		if bint(bidAmount) < bint(currentHighestBid) + minimumIncrement then
+		if bint(bidAmount) <= bint(currentHighestBid) + minimumIncrement then
 			return false, 'The next bid must be at least 1 ARIO higher than the current highest bid'
 		end
 	else
@@ -89,7 +89,7 @@ end
 
 -- Helper function to handle ANT token orders: we are buying ANT token, so we need to place bids on English auctions
 function english_auction.handleAntOrder(args, validPair, pairIndex)
-		-- Check if orderId is provided (required for bid identification)
+	-- Check if orderId is provided (required for bid identification)
 	if not args.orderId then
 		utils.handleError({
 			Target = args.sender,
@@ -197,7 +197,7 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 		
 	-- Return previous highest bid if it exists
 	if auctionBids.HighestBidder and auctionBids.HighestBid then
-				returnPreviousBid(targetAuctionId, auctionBids.HighestBidder, auctionBids.HighestBid, args.dominantToken)
+		returnPreviousBid(targetAuctionId, auctionBids.HighestBidder, auctionBids.HighestBid, args.dominantToken)
 	end
 
 	-- Store the new bid

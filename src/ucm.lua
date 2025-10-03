@@ -1,6 +1,7 @@
 local bint = require('.bint')(256)
 
 local utils = require('utils')
+local json = require('json')
 local fixed_price = require('fixed_price')
 local dutch_auction = require('dutch_auction')
 local english_auction = require('english_auction')
@@ -340,6 +341,153 @@ end
 
 function ucm.settleAuction(args)
 	english_auction.settleAuction(args)
+end
+
+-- Cancel an order
+-- Accepts the original msg so we can keep consistent behavior and responses
+function ucm.cancelOrder(msg)
+	local decodeCheck, data = utils.decodeMessageData(msg.Data)
+
+	if decodeCheck and data then
+		if not data.OrderId then
+			ao.send({
+				Target = msg.From,
+				Action = 'Input-Error',
+				Tags = { Status = 'Error', Message = 'Invalid arguments, required { OrderId }' }
+			})
+			return
+		end
+
+		-- Get order info from activity process
+		local activityQuery = ao.send({
+			Target = ACTIVITY_PROCESS,
+			Action = 'Get-Order-By-Id',
+			Data = json.encode({ OrderId = data.OrderId }),
+			Tags = {
+				Action = 'Get-Order-By-Id',
+				OrderId = data.OrderId,
+				Functioninvoke = "true"
+			}
+		}).receive()
+
+		local activityDecodeCheck, activityData = utils.decodeMessageData(activityQuery.Data)
+		if not activityDecodeCheck or not activityData then
+			ao.send({
+				Target = msg.From,
+				Action = 'Action-Response',
+				Tags = { Status = 'Error', Message = 'Order not found', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' }
+			})
+			return
+		end
+
+		-- Check if the sender is the order creator
+		if msg.From ~= activityData.Sender then
+			ao.send({
+				Target = msg.From,
+				Action = 'Action-Response',
+				Tags = { Status = 'Error', Message = 'Unauthorized to cancel this order', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' }
+			})
+			return
+		end
+
+		-- Block cancellation of English auctions that have bids
+		if activityData.OrderType == 'english' and activityData.Bids and #activityData.Bids > 0 then
+			ao.send({
+				Target = msg.From,
+				Action = 'Action-Response',
+				Tags = {
+					Status = 'Error',
+					Message = 'You cannot cancel an English auction that has bids',
+					['X-Group-ID'] = data['X-Group-ID'] or 'None',
+					Handler = 'Cancel-Order'
+				}
+			})
+			return
+		end
+
+		-- Only allow cancelling active or expired orders
+		if activityData.Status ~= 'active' and activityData.Status ~= 'expired' then
+			ao.send({
+				Target = msg.From,
+				Action = 'Action-Response',
+				Tags = { Status = 'Error', Message = 'Order cannot be cancelled because it is not active or expired', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' }
+			})
+			return
+		end
+
+		-- Find and remove order from orderbook
+		local orderFound = false
+		for pairIdx, pairData in ipairs(Orderbook) do
+			for orderIdx, currentOrderEntry in ipairs(pairData.Orders) do
+				if data.OrderId == currentOrderEntry.Id then
+					-- Return funds to the creator
+					ao.send({
+						Target = currentOrderEntry.Token,
+						Action = 'Transfer',
+						Tags = {
+							Recipient = currentOrderEntry.Creator,
+							Quantity = currentOrderEntry.Quantity
+						}
+					})
+
+					-- Remove the order from the orderbook
+					table.remove(Orderbook[pairIdx].Orders, orderIdx)
+					orderFound = true
+					break
+				end
+			end
+			if orderFound then break end
+		end
+
+		if orderFound then
+			ao.send({
+				Target = msg.From,
+				Action = 'Action-Response',
+				Tags = { Status = 'Success', Message = 'Order cancelled', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' }
+			})
+
+			-- Notify activity process of cancellation
+			local cancelledDataSuccess, cancelledData = pcall(function()
+				return json.encode({
+					Order = {
+						Id = data.OrderId,
+						DominantToken = activityData.DominantToken,
+						SwapToken = activityData.SwapToken,
+						Sender = msg.From,
+						Receiver = nil,
+						Quantity = tostring(activityData.Quantity),
+						Price = tostring(activityData.Price),
+						CreatedAt = msg.Timestamp,
+						EndedAt = msg.Timestamp,
+						CancellationTime = msg.Timestamp
+					}
+				})
+			end)
+
+			ao.send({
+				Target = ACTIVITY_PROCESS,
+				Action = 'Update-Cancelled-Orders',
+				Data = cancelledDataSuccess and cancelledData or ''
+			})
+		else
+			ao.send({
+				Target = msg.From,
+				Action = 'Action-Response',
+				Tags = { Status = 'Error', Message = 'Order not found in orderbook', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' }
+			})
+		end
+	else
+		ao.send({
+			Target = msg.From,
+			Action = 'Input-Error',
+			Tags = {
+				Status = 'Error',
+				Message = string.format('Failed to parse data, received: %s. %s',
+					msg.Data,
+					'Data must be an object - { OrderId }')
+			}
+		})
+	end
 end
 
 return ucm
