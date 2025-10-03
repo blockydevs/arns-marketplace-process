@@ -529,7 +529,7 @@ utils.test('getOrderById should return correct buyer address for settled English
 			Winner = 'bidder-winner',
 			WinningBid = '2000000000000',
 			Quantity = '1',
-			Timestamp = '17356899000',
+			Timestamp = '1735689900000',
 			DominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10',
 			SwapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'
 		}

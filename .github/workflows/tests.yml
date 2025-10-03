@@ -45,6 +45,5 @@ jobs:
             -   name: Run english tests
                 if: ${{ always() }}
                 run: |
-                    set -euo pipefail
                     cd tests
                     lua english_tests.lua
