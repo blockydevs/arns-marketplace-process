@@ -3,6 +3,7 @@ local json = require('json')
 
 local utils = require('utils')
 local helpers = require('helpers')
+local activity = require('activity')
 
 local fixed_price = {}
 
