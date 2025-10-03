@@ -19,8 +19,7 @@ source = {
 
 dependencies = {
   "lua >= 5.4",
-  "bint",
-  "json-lua",
+  "bint"
 }
 
 build = {

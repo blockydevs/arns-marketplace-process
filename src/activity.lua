@@ -1,4 +1,4 @@
-local bint = require('.bint')(256)
+local bint = require('bint')(256)
 local json = require('json')
 
 local utils = require('utils')
@@ -149,8 +149,8 @@ end
 -- Reusable state updater to move expired orders from Listed to Expired
 -- updateOrderStates removed: we compute status on the fly for reads
 
--- Get listed orders
-Handlers.add('Get-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Listed-Orders'), function(msg)
+-- Business logic for getting listed orders
+local function getListedOrders(msg)
 	local page = utils.parsePaginationTags(msg)
 
 	local now = math.floor(tonumber(msg.Timestamp))
@@ -169,10 +169,13 @@ Handlers.add('Get-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-L
 		Action = 'Read-Success',
 		Data = json.encode(paginatedOrders)
 	})
-end)
+end
 
--- Get completed orders
-Handlers.add('Get-Completed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Completed-Orders'), function(msg)
+-- Get listed orders
+Handlers.add('Get-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Listed-Orders'), getListedOrders)
+
+-- Business logic for getting completed orders
+local function getCompletedOrders(msg)
 	local page = utils.parsePaginationTags(msg)
 
 	local now = math.floor(tonumber(msg.Timestamp))
@@ -194,10 +197,13 @@ Handlers.add('Get-Completed-Orders', Handlers.utils.hasMatchingTag('Action', 'Ge
 		Action = 'Read-Success',
 		Data = json.encode(paginatedOrders)
 	})
-end)
+end
 
--- Get order by ID
-Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Order-By-Id'), function(msg)
+-- Get completed orders
+Handlers.add('Get-Completed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Completed-Orders'), getCompletedOrders)
+
+-- Business logic for getting order by ID
+local function getOrderById(msg)
 	local orderId = msg.Tags.Orderid or msg.Tags.OrderId
 	local decodeCheck, data = utils.decodeMessageData(msg.Data)
 	
@@ -260,11 +266,13 @@ Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Ord
 			Data = json.encode(response)
 		})
 	end
+end
 
-end)
+-- Get order by ID
+Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Order-By-Id'), getOrderById)
 
--- Read activity
-Handlers.add('Get-Activity', Handlers.utils.hasMatchingTag('Action', 'Get-Activity'), function(msg)
+-- Business logic for getting activity
+local function getActivity(msg)
 	local decodeCheck, data = utils.decodeMessageData(msg.Data)
 
 	if not decodeCheck then
@@ -354,43 +362,49 @@ Handlers.add('Get-Activity', Handlers.utils.hasMatchingTag('Action', 'Get-Activi
 			ExpiredOrdersList = expiredWithFields
 		})
 	})
-end)
+end
 
--- Read order counts by address
-Handlers.add('Get-Order-Counts-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Order-Counts-By-Address'),
-	function(msg)
-		local salesByAddress = SalesByAddress
-		local purchasesByAddress = PurchasesByAddress
+-- Read activity
+Handlers.add('Get-Activity', Handlers.utils.hasMatchingTag('Action', 'Get-Activity'), getActivity)
 
-		if msg.Tags.Count then
-			local function getTopN(data, n)
-				local sortedData = {}
-				for k, v in pairs(data) do
-					table.insert(sortedData, { key = k, value = v })
-				end
-				table.sort(sortedData, function(a, b) return a.value > b.value end)
-				local topN = {}
-				for i = 1, n do
-					topN[sortedData[i].key] = sortedData[i].value
-				end
-				return topN
+-- Business logic for getting order counts by address
+local function getOrderCountsByAddress(msg)
+	local salesByAddress = SalesByAddress
+	local purchasesByAddress = PurchasesByAddress
+
+	if msg.Tags.Count then
+		local function getTopN(data, n)
+			local sortedData = {}
+			for k, v in pairs(data) do
+				table.insert(sortedData, { key = k, value = v })
 			end
-
-			salesByAddress = getTopN(SalesByAddress, msg.Tags.Count)
-			purchasesByAddress = getTopN(PurchasesByAddress, msg.Tags.Count)
+			table.sort(sortedData, function(a, b) return a.value > b.value end)
+			local topN = {}
+			for i = 1, n do
+				topN[sortedData[i].key] = sortedData[i].value
+			end
+			return topN
 		end
 
-		ao.send({
-			Target = msg.From,
-			Action = 'Read-Success',
-			Data = json.encode({
-				SalesByAddress = salesByAddress,
-				PurchasesByAddress = purchasesByAddress
-			})
-		})
-	end)
+		salesByAddress = getTopN(SalesByAddress, msg.Tags.Count)
+		purchasesByAddress = getTopN(PurchasesByAddress, msg.Tags.Count)
+	end
 
-Handlers.add('Get-Sales-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Sales-By-Address'), function(msg)
+	ao.send({
+		Target = msg.From,
+		Action = 'Read-Success',
+		Data = json.encode({
+			SalesByAddress = salesByAddress,
+			PurchasesByAddress = purchasesByAddress
+		})
+	})
+end
+
+-- Read order counts by address
+Handlers.add('Get-Order-Counts-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Order-Counts-By-Address'), getOrderCountsByAddress)
+
+-- Business logic for getting sales by address
+local function getSalesByAddress(msg)
 	ao.send({
 		Target = msg.From,
 		Action = 'Read-Success',
@@ -398,278 +412,297 @@ Handlers.add('Get-Sales-By-Address', Handlers.utils.hasMatchingTag('Action', 'Ge
 			SalesByAddress = SalesByAddress
 		})
 	})
-end)
+end
 
-Handlers.add('Update-Executed-Orders', Handlers.utils.hasMatchingTag('Action', 'Update-Executed-Orders'),
-	function(msg)
-		if msg.From ~= UCM_PROCESS then
-			return
+Handlers.add('Get-Sales-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Sales-By-Address'), getSalesByAddress)
+
+-- Business logic for updating executed orders
+local function updateExecutedOrders(msg)
+	if msg.From ~= UCM_PROCESS then
+		return
+	end
+
+	local decodeCheck, data = utils.decodeMessageData(msg.Data)
+
+	if not decodeCheck or not data.Order then
+		return
+	end
+
+	-- Debug: warn when critical executed fields are missing in payload
+	if not data.Order.Receiver then
+		print('WARN(Update-Executed-Orders): Receiver is nil for OrderId ' .. tostring(data.Order.Id))
+	end
+	if not data.Order.Price then
+		print('WARN(Update-Executed-Orders): Price is nil for OrderId ' .. tostring(data.Order.Id))
+	end
+
+	-- Search for the order in ListedOrders
+	local foundOrder = nil
+	-- Find the order in ListedOrders and remove it
+	for i, order in ipairs(ListedOrders) do
+		if order.OrderId == data.Order.Id then
+			foundOrder = order
+			table.remove(ListedOrders, i)
+			break
 		end
+	end
 
-		local decodeCheck, data = utils.decodeMessageData(msg.Data)
+	if foundOrder and foundOrder.OrderType == 'english' then
+        foundOrder.StartingPrice = foundOrder.Price
+    end
 
-		if not decodeCheck or not data.Order then
-			return
+	foundOrder.EndedAt = data.Order.EndedAt or data.Order.ExecutionTime
+	-- Merge execution payload fields to ensure buyer/price are recorded
+	foundOrder.DominantToken = data.Order.DominantToken or foundOrder.DominantToken
+	foundOrder.SwapToken = data.Order.SwapToken or foundOrder.SwapToken
+	foundOrder.Sender = data.Order.Sender or foundOrder.Sender
+	foundOrder.Receiver = data.Order.Receiver or foundOrder.Receiver
+	foundOrder.Quantity = data.Order.Quantity or foundOrder.Quantity
+	foundOrder.Price = data.Order.Price or foundOrder.Price
+
+	-- Debug: warn if after merge Receiver/Price are still nil
+	if not foundOrder.Receiver then
+		print('WARN(Update-Executed-Orders): Merged order still has nil Receiver for OrderId ' .. tostring(data.Order.Id))
+	end
+	if not foundOrder.Price then
+		print('WARN(Update-Executed-Orders): Merged order still has nil Price for OrderId ' .. tostring(data.Order.Id))
+	end
+	-- Add the order to ExecutedOrders
+	table.insert(ExecutedOrders, foundOrder)
+
+	if not SalesByAddress[data.Order.Sender] then
+		SalesByAddress[data.Order.Sender] = 0
+	end
+	SalesByAddress[data.Order.Sender] = SalesByAddress[data.Order.Sender] + 1
+
+	if not PurchasesByAddress[data.Order.Receiver] then
+		PurchasesByAddress[data.Order.Receiver] = 0
+	end
+	PurchasesByAddress[data.Order.Receiver] = PurchasesByAddress[data.Order.Receiver] + 1
+end
+
+Handlers.add('Update-Executed-Orders', Handlers.utils.hasMatchingTag('Action', 'Update-Executed-Orders'), updateExecutedOrders)
+
+-- Business logic for updating listed orders
+local function updateListedOrders(msg)
+	if msg.From ~= UCM_PROCESS then
+		return
+	end
+
+	local decodeCheck, data = utils.decodeMessageData(msg.Data)
+
+	if not decodeCheck or not data.Order then
+		return
+	end
+
+	table.insert(ListedOrders, {
+		OrderId = data.Order.Id,
+		DominantToken = data.Order.DominantToken,
+		SwapToken = data.Order.SwapToken,
+		Sender = data.Order.Sender,
+		Receiver = nil,
+		Quantity = data.Order.Quantity,
+		Price = data.Order.Price,
+		CreatedAt = data.Order.CreatedAt,
+		Domain = data.Order.Domain,
+		OrderType = data.Order.OrderType,
+		MinimumPrice = data.Order.MinimumPrice,
+		DecreaseInterval = data.Order.DecreaseInterval,
+		DecreaseStep = data.Order.DecreaseStep,
+		ExpirationTime = data.Order.ExpirationTime,
+		OwnershipType = data.Order.OwnershipType,
+		LeaseStartTimestamp = data.Order.LeaseStartTimestamp,
+		LeaseEndTimestamp = data.Order.LeaseEndTimestamp
+	})
+end
+
+Handlers.add('Update-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Update-Listed-Orders'), updateListedOrders)
+
+-- Business logic for updating cancelled orders
+local function updateCancelledOrders(msg)
+	if msg.From ~= UCM_PROCESS then
+		return
+	end
+
+	local decodeCheck, data = utils.decodeMessageData(msg.Data)
+
+	if not decodeCheck or not data.Order then
+		return
+	end
+
+	-- Search for the order in ListedOrders
+	local foundOrder = nil
+
+	-- Find the order in ListedOrders and remove it
+	for i, order in ipairs(ListedOrders) do
+		if order.OrderId == data.Order.Id then
+			foundOrder = order
+			table.remove(ListedOrders, i)
+			break
 		end
+	end
 
-		-- Debug: warn when critical executed fields are missing in payload
-		if not data.Order.Receiver then
-			print('WARN(Update-Executed-Orders): Receiver is nil for OrderId ' .. tostring(data.Order.Id))
-		end
-		if not data.Order.Price then
-			print('WARN(Update-Executed-Orders): Price is nil for OrderId ' .. tostring(data.Order.Id))
-		end
+	foundOrder.EndedAt = data.Order.EndedAt or data.Order.CancellationTime
+	
+	-- Add the order to CancelledOrders
+	table.insert(CancelledOrders, foundOrder)
+end
 
-		-- Search for the order in ListedOrders
-		local foundOrder = nil
-		-- Find the order in ListedOrders and remove it
-		for i, order in ipairs(ListedOrders) do
-			if order.OrderId == data.Order.Id then
-				foundOrder = order
-				table.remove(ListedOrders, i)
-				break
+Handlers.add('Update-Cancelled-Orders', Handlers.utils.hasMatchingTag('Action', 'Update-Cancelled-Orders'), updateCancelledOrders)
+
+-- Business logic for updating auction bids
+local function updateAuctionBids(msg)
+	if msg.From ~= UCM_PROCESS then
+		return
+	end
+
+	local decodeCheck, data = utils.decodeMessageData(msg.Data)
+
+	if not decodeCheck or not data.Bid then
+		return
+	end
+
+	local orderId = data.Bid.OrderId
+	if not AuctionBids[orderId] then
+		AuctionBids[orderId] = {
+			Bids = {},
+			HighestBid = nil,
+			HighestBidder = nil
+		}
+	end
+
+	-- Add the new bid
+	table.insert(AuctionBids[orderId].Bids, {
+		Bidder = data.Bid.Bidder,
+		Amount = data.Bid.Amount,
+		Timestamp = data.Bid.Timestamp,
+		OrderId = data.Bid.OrderId
+	})
+
+	-- Update highest bid if this is higher
+	if not AuctionBids[orderId].HighestBid or bint(data.Bid.Amount) > bint(AuctionBids[orderId].HighestBid) then
+		AuctionBids[orderId].HighestBid = data.Bid.Amount
+		AuctionBids[orderId].HighestBidder = data.Bid.Bidder
+	end
+end
+
+Handlers.add('Update-Auction-Bids', Handlers.utils.hasMatchingTag('Action', 'Update-Auction-Bids'), updateAuctionBids)
+
+-- Business logic for updating auction settlement
+local function updateAuctionSettlement(msg)
+	if msg.From ~= UCM_PROCESS then
+		return
+	end
+
+	local decodeCheck, data = utils.decodeMessageData(msg.Data)
+
+	if not decodeCheck or not data.Settlement then
+		return
+	end
+
+	-- Add settlement information to the auction bids
+	local orderId = data.Settlement.OrderId
+	if AuctionBids[orderId] then
+		AuctionBids[orderId].Settlement = {
+			Winner = data.Settlement.Winner,
+			Quantity = data.Settlement.Quantity,
+			Timestamp = data.Settlement.Timestamp
+		}
+	end
+end
+
+Handlers.add('Update-Auction-Settlement', Handlers.utils.hasMatchingTag('Action', 'Update-Auction-Settlement'), updateAuctionSettlement)
+
+-- Business logic for getting UCM purchase amount
+local function getUCMPurchaseAmount(msg)
+	local totalBurnAmount = bint(0)
+	for _, order in ipairs(ExecutedOrders) do
+		if order.Receiver == UCM_PROCESS then
+			totalBurnAmount = totalBurnAmount + bint(order.Quantity)
+		end
+	end
+
+	ao.send({
+		Target = msg.From,
+		Action = 'UCM-Purchase-Amount-Notice',
+		BurnAmount = tostring(totalBurnAmount)
+	})
+end
+
+Handlers.add('Get-UCM-Purchase-Amount', Handlers.utils.hasMatchingTag('Action', 'Get-UCM-Purchase-Amount'), getUCMPurchaseAmount)
+
+-- Business logic for getting volume
+local function getVolume(msg)
+	local function validNumber(value)
+		return type(value) == 'number' or (type(value) == 'string' and tonumber(value) ~= nil)
+	end
+
+	local totalVolume = bint(0)
+	for _, order in ipairs(ExecutedOrders) do
+		if order.Receiver and order.Quantity and validNumber(order.Quantity) and order.Price and validNumber(order.Price) then
+			local price = bint(math.floor(order.Price)) // bint(1000000000000)
+
+			local quantity = bint(math.floor(order.Quantity))
+			if order.DominantToken == 'pazXumQI-HPH7iFGfTC-4_7biSnqz_U67oFAGry5zUY' then
+				quantity = quantity // bint(1000000000000)
 			end
-		end
-
-		if foundOrder and foundOrder.OrderType == 'english' then
-            foundOrder.StartingPrice = foundOrder.Price
-        end
-
-		foundOrder.EndedAt = data.Order.EndedAt or data.Order.ExecutionTime
-		-- Merge execution payload fields to ensure buyer/price are recorded
-		foundOrder.DominantToken = data.Order.DominantToken or foundOrder.DominantToken
-		foundOrder.SwapToken = data.Order.SwapToken or foundOrder.SwapToken
-		foundOrder.Sender = data.Order.Sender or foundOrder.Sender
-		foundOrder.Receiver = data.Order.Receiver or foundOrder.Receiver
-		foundOrder.Quantity = data.Order.Quantity or foundOrder.Quantity
-		foundOrder.Price = data.Order.Price or foundOrder.Price
-
-		-- Debug: warn if after merge Receiver/Price are still nil
-		if not foundOrder.Receiver then
-			print('WARN(Update-Executed-Orders): Merged order still has nil Receiver for OrderId ' .. tostring(data.Order.Id))
-		end
-		if not foundOrder.Price then
-			print('WARN(Update-Executed-Orders): Merged order still has nil Price for OrderId ' .. tostring(data.Order.Id))
-		end
-		-- Add the order to ExecutedOrders
-		table.insert(ExecutedOrders, foundOrder)
-
-		if not SalesByAddress[data.Order.Sender] then
-			SalesByAddress[data.Order.Sender] = 0
-		end
-		SalesByAddress[data.Order.Sender] = SalesByAddress[data.Order.Sender] + 1
-
-		if not PurchasesByAddress[data.Order.Receiver] then
-			PurchasesByAddress[data.Order.Receiver] = 0
-		end
-		PurchasesByAddress[data.Order.Receiver] = PurchasesByAddress[data.Order.Receiver] + 1
-	end)
-
-Handlers.add('Update-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Update-Listed-Orders'),
-	function(msg)
-		if msg.From ~= UCM_PROCESS then
-			return
-		end
-
-		local decodeCheck, data = utils.decodeMessageData(msg.Data)
-
-		if not decodeCheck or not data.Order then
-			return
-		end
-
-		table.insert(ListedOrders, {
-			OrderId = data.Order.Id,
-			DominantToken = data.Order.DominantToken,
-			SwapToken = data.Order.SwapToken,
-			Sender = data.Order.Sender,
-			Receiver = nil,
-			Quantity = data.Order.Quantity,
-			Price = data.Order.Price,
-			CreatedAt = data.Order.CreatedAt,
-			Domain = data.Order.Domain,
-			OrderType = data.Order.OrderType,
-			MinimumPrice = data.Order.MinimumPrice,
-			DecreaseInterval = data.Order.DecreaseInterval,
-			DecreaseStep = data.Order.DecreaseStep,
-			ExpirationTime = data.Order.ExpirationTime,
-			OwnershipType = data.Order.OwnershipType,
-			LeaseStartTimestamp = data.Order.LeaseStartTimestamp,
-			LeaseEndTimestamp = data.Order.LeaseEndTimestamp
-		})
-	end)
-
-Handlers.add('Update-Cancelled-Orders', Handlers.utils.hasMatchingTag('Action', 'Update-Cancelled-Orders'),
-	function(msg)
-		if msg.From ~= UCM_PROCESS then
-			return
-		end
-
-		local decodeCheck, data = utils.decodeMessageData(msg.Data)
-
-		if not decodeCheck or not data.Order then
-			return
-		end
-
-		-- Search for the order in ListedOrders
-		local foundOrder = nil
-
-		-- Find the order in ListedOrders and remove it
-		for i, order in ipairs(ListedOrders) do
-			if order.OrderId == data.Order.Id then
-				foundOrder = order
-				table.remove(ListedOrders, i)
-				break
+			if order.DominantToken == 'Btm_9_fvwb7eXbQ2VswA4V19HxYWnFsYRB4gIl3Dahw' then
+				quantity = quantity // bint(1000000000000)
 			end
+
+			totalVolume = totalVolume + quantity * price
 		end
+	end
 
-		foundOrder.EndedAt = data.Order.EndedAt or data.Order.CancellationTime
-		
-		-- Add the order to CancelledOrders
-		table.insert(CancelledOrders, foundOrder)
-	end)
+	print('Total Volume: ' .. tostring(totalVolume))
 
-Handlers.add('Update-Auction-Bids', Handlers.utils.hasMatchingTag('Action', 'Update-Auction-Bids'),
-	function(msg)
-		if msg.From ~= UCM_PROCESS then
-			return
+	ao.send({
+		Target = msg.From,
+		Action = 'Volume-Notice',
+		Volume = tostring(totalVolume)
+	})
+end
+
+Handlers.add('Get-Volume', Handlers.utils.hasMatchingTag('Action', 'Get-Volume'), getVolume)
+
+-- Business logic for getting most traded tokens
+local function getMostTradedTokens(msg)
+	local tokenVolumes = {}
+
+	for _, order in ipairs(ExecutedOrders) do
+		if order.DominantToken and order.Quantity and type(order.Quantity) == 'string' then
+			local quantity = bint(math.floor(order.Quantity))
+			tokenVolumes[order.DominantToken] = (tokenVolumes[order.DominantToken] or bint(0)) + quantity
 		end
+	end
 
-		local decodeCheck, data = utils.decodeMessageData(msg.Data)
+	local sortedTokens = {}
+	for token, volume in pairs(tokenVolumes) do
+		table.insert(sortedTokens, { token = token, volume = volume })
+	end
 
-		if not decodeCheck or not data.Bid then
-			return
-		end
+	table.sort(sortedTokens, function(a, b) return a.volume > b.volume end)
 
-		local orderId = data.Bid.OrderId
-		if not AuctionBids[orderId] then
-			AuctionBids[orderId] = {
-				Bids = {},
-				HighestBid = nil,
-				HighestBidder = nil
-			}
-		end
+	local topN = tonumber(msg.Tags.Count) or 10
+	local result = {}
+	for i = 1, math.min(topN, #sortedTokens) do
+		result[i] = {
+			Token = sortedTokens[i].token,
+			Volume = tostring(sortedTokens[i].volume)
+		}
+	end
 
-		-- Add the new bid
-		table.insert(AuctionBids[orderId].Bids, {
-			Bidder = data.Bid.Bidder,
-			Amount = data.Bid.Amount,
-			Timestamp = data.Bid.Timestamp,
-			OrderId = data.Bid.OrderId
-		})
+	ao.send({
+		Target = msg.From,
+		Action = 'Most-Traded-Tokens-Result',
+		Data = json.encode(result)
+	})
+end
 
-		-- Update highest bid if this is higher
-		if not AuctionBids[orderId].HighestBid or bint(data.Bid.Amount) > bint(AuctionBids[orderId].HighestBid) then
-			AuctionBids[orderId].HighestBid = data.Bid.Amount
-			AuctionBids[orderId].HighestBidder = data.Bid.Bidder
-		end
-	end)
+Handlers.add('Get-Most-Traded-Tokens', Handlers.utils.hasMatchingTag('Action', 'Get-Most-Traded-Tokens'), getMostTradedTokens)
 
-Handlers.add('Update-Auction-Settlement', Handlers.utils.hasMatchingTag('Action', 'Update-Auction-Settlement'),
-	function(msg)
-		if msg.From ~= UCM_PROCESS then
-			return
-		end
-
-		local decodeCheck, data = utils.decodeMessageData(msg.Data)
-
-		if not decodeCheck or not data.Settlement then
-			return
-		end
-
-		-- Add settlement information to the auction bids
-		local orderId = data.Settlement.OrderId
-		if AuctionBids[orderId] then
-			AuctionBids[orderId].Settlement = {
-				Winner = data.Settlement.Winner,
-				Quantity = data.Settlement.Quantity,
-				Timestamp = data.Settlement.Timestamp
-			}
-		end
-	end)
-
-Handlers.add('Get-UCM-Purchase-Amount', Handlers.utils.hasMatchingTag('Action', 'Get-UCM-Purchase-Amount'),
-	function(msg)
-		local totalBurnAmount = bint(0)
-		for _, order in ipairs(ExecutedOrders) do
-			if order.Receiver == UCM_PROCESS then
-				totalBurnAmount = totalBurnAmount + bint(order.Quantity)
-			end
-		end
-
-		ao.send({
-			Target = msg.From,
-			Action = 'UCM-Purchase-Amount-Notice',
-			BurnAmount = tostring(totalBurnAmount)
-		})
-	end)
-
-Handlers.add('Get-Volume', Handlers.utils.hasMatchingTag('Action', 'Get-Volume'),
-	function(msg)
-		local function validNumber(value)
-			return type(value) == 'number' or (type(value) == 'string' and tonumber(value) ~= nil)
-		end
-
-		local totalVolume = bint(0)
-		for _, order in ipairs(ExecutedOrders) do
-			if order.Receiver and order.Quantity and validNumber(order.Quantity) and order.Price and validNumber(order.Price) then
-				local price = bint(math.floor(order.Price)) // bint(1000000000000)
-
-				local quantity = bint(math.floor(order.Quantity))
-				if order.DominantToken == 'pazXumQI-HPH7iFGfTC-4_7biSnqz_U67oFAGry5zUY' then
-					quantity = quantity // bint(1000000000000)
-				end
-				if order.DominantToken == 'Btm_9_fvwb7eXbQ2VswA4V19HxYWnFsYRB4gIl3Dahw' then
-					quantity = quantity // bint(1000000000000)
-				end
-
-				totalVolume = totalVolume + quantity * price
-			end
-		end
-
-		print('Total Volume: ' .. tostring(totalVolume))
-
-		ao.send({
-			Target = msg.From,
-			Action = 'Volume-Notice',
-			Volume = tostring(totalVolume)
-		})
-	end)
-
-Handlers.add('Get-Most-Traded-Tokens', Handlers.utils.hasMatchingTag('Action', 'Get-Most-Traded-Tokens'),
-	function(msg)
-		local tokenVolumes = {}
-
-		for _, order in ipairs(ExecutedOrders) do
-			if order.DominantToken and order.Quantity and type(order.Quantity) == 'string' then
-				local quantity = bint(math.floor(order.Quantity))
-				tokenVolumes[order.DominantToken] = (tokenVolumes[order.DominantToken] or bint(0)) + quantity
-			end
-		end
-
-		local sortedTokens = {}
-		for token, volume in pairs(tokenVolumes) do
-			table.insert(sortedTokens, { token = token, volume = volume })
-		end
-
-		table.sort(sortedTokens, function(a, b) return a.volume > b.volume end)
-
-		local topN = tonumber(msg.Tags.Count) or 10
-		local result = {}
-		for i = 1, math.min(topN, #sortedTokens) do
-			result[i] = {
-				Token = sortedTokens[i].token,
-				Volume = tostring(sortedTokens[i].volume)
-			}
-		end
-
-		ao.send({
-			Target = msg.From,
-			Action = 'Most-Traded-Tokens-Result',
-			Data = json.encode(result)
-		})
-	end)
-
-Handlers.add('Get-Activity-Lengths', Handlers.utils.hasMatchingTag('Action', 'Get-Activity-Lengths'), function(msg)
+-- Business logic for getting activity lengths
+local function getActivityLengths(msg)
 	local function countTableEntries(tbl)
 		local count = 0
 		for _ in pairs(tbl) do
@@ -689,9 +722,12 @@ Handlers.add('Get-Activity-Lengths', Handlers.utils.hasMatchingTag('Action', 'Ge
 			PurchasesByAddress = countTableEntries(PurchasesByAddress)
 		})
 	})
-end)
+end
 
-Handlers.add('Migrate-Activity-Dryrun', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Dryrun'), function(msg)
+Handlers.add('Get-Activity-Lengths', Handlers.utils.hasMatchingTag('Action', 'Get-Activity-Lengths'), getActivityLengths)
+
+-- Business logic for migrate activity dryrun
+local function migrateActivityDryrun(msg)
 	local orderTable = {}
 	local orderType = msg.Tags['Order-Type']
 	local stepBy = tonumber(msg.Tags['Step-By'])
@@ -723,9 +759,12 @@ Handlers.add('Migrate-Activity-Dryrun', Handlers.utils.hasMatchingTag('Action', 
 		print('Invalid Order-Type: ' .. orderType)
 		return
 	end
-end)
+end
 
-Handlers.add('Migrate-Activity', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity'), function(msg)
+Handlers.add('Migrate-Activity-Dryrun', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Dryrun'), migrateActivityDryrun)
+
+-- Business logic for migrate activity
+local function migrateActivity(msg)
 	if msg.From ~= ao.id and msg.From ~= Owner then return end
 	print('Starting migration process...')
 
@@ -787,9 +826,12 @@ Handlers.add('Migrate-Activity', Handlers.utils.hasMatchingTag('Action', 'Migrat
 	print('Starting ' .. orderType .. 'Orders migration (total: ' .. #orderTable .. ')')
 	sendBatch(orderTable, orderType, tonumber(msg.Tags.StartIndex))
 	print('Migration initiation completed')
-end)
+end
 
-Handlers.add('Migrate-Activity-Batch', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Batch'), function(msg)
+Handlers.add('Migrate-Activity', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity'), migrateActivity)
+
+-- Business logic for migrate activity batch
+local function migrateActivityBatch(msg)
 	if msg.Owner ~= Owner then
 		print('Rejected batch: unauthorized sender')
 		return
@@ -846,9 +888,12 @@ Handlers.add('Migrate-Activity-Batch', Handlers.utils.hasMatchingTag('Action', '
 		Target = msg.From,
 		Action = 'Batch-Processed'
 	})
-end)
+end
 
-Handlers.add('Migrate-Activity-Stats', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Stats'), function(msg)
+Handlers.add('Migrate-Activity-Batch', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Batch'), migrateActivityBatch)
+
+-- Business logic for migrate activity stats
+local function migrateActivityStats(msg)
 	if msg.From ~= '7_psKu3QHwzc2PFCJk2lEwyitLJbz6Vj7hOcltOulj4' then
 		print('Rejected stats: unauthorized sender')
 		return
@@ -872,4 +917,38 @@ Handlers.add('Migrate-Activity-Stats', Handlers.utils.hasMatchingTag('Action', '
 	end
 
 	print('Successfully processed address statistics')
-end)
+end
+
+Handlers.add('Migrate-Activity-Stats', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Stats'), migrateActivityStats)
+
+-- Export functions for testing and external use
+return {
+	getListedOrders = getListedOrders,
+	getCompletedOrders = getCompletedOrders,
+	getOrderById = getOrderById,
+	getActivity = getActivity,
+	getOrderCountsByAddress = getOrderCountsByAddress,
+	getSalesByAddress = getSalesByAddress,
+	updateExecutedOrders = updateExecutedOrders,
+	updateListedOrders = updateListedOrders,
+	updateCancelledOrders = updateCancelledOrders,
+	updateAuctionBids = updateAuctionBids,
+	updateAuctionSettlement = updateAuctionSettlement,
+	getUCMPurchaseAmount = getUCMPurchaseAmount,
+	getVolume = getVolume,
+	getMostTradedTokens = getMostTradedTokens,
+	getActivityLengths = getActivityLengths,
+	migrateActivityDryrun = migrateActivityDryrun,
+	migrateActivity = migrateActivity,
+	migrateActivityBatch = migrateActivityBatch,
+	migrateActivityStats = migrateActivityStats,
+	-- Helper functions
+	normalizeOrderTimestamps = normalizeOrderTimestamps,
+	applyEnglishAuctionFields = applyEnglishAuctionFields,
+	computeListedStatus = computeListedStatus,
+	decorateOrder = decorateOrder,
+	filterOrdersByName = filterOrdersByName,
+	getListedSnapshot = getListedSnapshot,
+	getExecutedSnapshot = getExecutedSnapshot,
+	getCancelledSnapshot = getCancelledSnapshot
+}
