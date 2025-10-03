@@ -1,10 +1,11 @@
 local json = require('json')
 
 local ucm = require('ucm')
+local activity = require('activity')
 local utils = require('utils')
 
+
 -- CHANGEME
-ACTIVITY_PROCESS = 'Jj8LhgFLmCE_BAMys_zoTDRx8eYXsSl3-BMBIov8n9E'
 ARIO_TOKEN_PROCESS_ID = 'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA'
 
 function Trusted(msg)
@@ -17,6 +18,42 @@ function Trusted(msg)
 	end
 	return true
 end
+
+-- Activity process handlers
+-- Get listed orders
+Handlers.add('Get-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Listed-Orders'), activity.getListedOrders)
+
+-- Get completed orders
+Handlers.add('Get-Completed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Completed-Orders'), activity.getCompletedOrders)
+
+-- Get order by ID
+Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Order-By-Id'), activity.getOrderById)
+
+-- Read activity
+Handlers.add('Get-Activity', Handlers.utils.hasMatchingTag('Action', 'Get-Activity'), activity.getActivity)
+
+-- Read order counts by address
+Handlers.add('Get-Order-Counts-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Order-Counts-By-Address'), activity.getOrderCountsByAddress)
+
+Handlers.add('Get-Sales-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Sales-By-Address'), activity.getSalesByAddress)
+
+Handlers.add('Get-UCM-Purchase-Amount', Handlers.utils.hasMatchingTag('Action', 'Get-UCM-Purchase-Amount'), activity.getUCMPurchaseAmount)
+
+Handlers.add('Get-Volume', Handlers.utils.hasMatchingTag('Action', 'Get-Volume'), activity.getVolume)
+
+Handlers.add('Get-Most-Traded-Tokens', Handlers.utils.hasMatchingTag('Action', 'Get-Most-Traded-Tokens'), activity.getMostTradedTokens)
+
+Handlers.add('Get-Activity-Lengths', Handlers.utils.hasMatchingTag('Action', 'Get-Activity-Lengths'), activity.getActivityLengths)
+
+Handlers.add('Migrate-Activity-Dryrun', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Dryrun'), activity.migrateActivityDryrun)
+
+Handlers.add('Migrate-Activity', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity'), activity.migrateActivity)
+
+Handlers.add('Migrate-Activity-Batch', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Batch'), activity.migrateActivityBatch)
+
+Handlers.add('Migrate-Activity-Stats', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Stats'), activity.migrateActivityStats)
+
+-- End of activity process handlers
 
 Handlers.prepend('qualify message',
 	Trusted,
@@ -228,38 +265,25 @@ Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-A
 		return
 	end
 	
-	-- Check if order is ready for settlement by querying activity process
-	local activityQuery = ao.send({
-		Target = ACTIVITY_PROCESS,
-		Action = 'Get-Order-By-Id',
-		Tags = {
-			Action = 'Get-Order-By-Id',
-			OrderId = data.OrderId,
-			Functioninvoke = "true"
-		}
-	}).receive()
-	
-	local activityDecodeCheck, activityData = utils.decodeMessageData(activityQuery.Data)
-	if not activityDecodeCheck or not activityData then
+	-- Use internal activity lookup instead of messaging
+	local foundOrder = activity.findOrderById(data.OrderId, msg.Timestamp)
+	if not foundOrder then
 		ao.send({
 			Target = msg.From,
 			Action = 'Settlement-Error',
-			Tags = { Status = 'Error', Message = 'Failed to query order status' }
+			Tags = { Status = 'Error', Message = 'Order not found' }
 		})
 		return
 	end
 	
-	-- Check if order is ready for settlement
-	print('Activity data: ')
-	print(activityData)
-	if activityData.Status ~= 'ready-for-settlement' then
+	if foundOrder.Status ~= 'ready-for-settlement' then
 		ao.send({
 			Target = msg.From,
 			Action = 'Settlement-Error',
 			Tags = { 
 				Status = 'Error', 
-				Message = 'Order is not ready for settlement. Status: ' .. tostring(activityData.Status),
-				CurrentStatus = tostring(activityData.Status)
+				Message = 'Order is not ready for settlement. Status: ' .. tostring(foundOrder.Status),
+				CurrentStatus = tostring(foundOrder.Status)
 			}
 		})
 		return

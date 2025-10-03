@@ -1,7 +1,9 @@
-local bint = require('bint')(256)
+local bint = require('.bint')(256)
 local json = require('json')
 
 local utils = require('utils')
+local helpers = require('helpers')
+local activity = require('activity')
 
 local english_auction = {}
 
@@ -214,25 +216,15 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 	auctionBids.HighestBid = tostring(bidAmount) -- Use the quantity sent by user
 	auctionBids.HighestBidder = args.sender
 	
-	-- Send bid data to activity tracking process
-	local bidDataSuccess, bidData = pcall(function()
-		return json.encode({
-			Bid = {
-				OrderId = targetAuctionId,
-				Bidder = args.sender,
-				Amount = tostring(bidAmount), -- Use the quantity sent by user
-				Timestamp = args.createdAt,
-				DominantToken = args.dominantToken,
-				SwapToken = args.swapToken,
-				BidType = 'english_auction'
-			}
-		})
-	end)
-
-	ao.send({
-		Target = ACTIVITY_PROCESS,
-		Action = 'Update-Auction-Bids',
-		Data = bidDataSuccess and bidData or ''
+	-- Record bid internally
+	activity.recordAuctionBid({
+		OrderId = targetAuctionId,
+		Bidder = args.sender,
+		Amount = tostring(bidAmount),
+		Timestamp = args.createdAt,
+		DominantToken = args.dominantToken,
+		SwapToken = args.swapToken,
+		BidType = 'english_auction'
 	})
 
 	-- Notify sender of successful bid placement
@@ -349,41 +341,20 @@ function english_auction.settleAuction(args)
 		SwapToken = args.swapToken
 	}
 
-	-- Send settlement data to activity tracking
-	local settlementDataSuccess, settlementData = pcall(function()
-		return json.encode({
-			Settlement = settlement
-		})
-	end)
+	activity.recordAuctionSettlement(settlement)
 
-	ao.send({
-		Target = ACTIVITY_PROCESS,
-		Action = 'Update-Auction-Settlement',
-		Data = settlementDataSuccess and settlementData or ''
-	})
-
-	-- Also mark order as executed/completed in activity so it appears in completed orders
-	local executedDataSuccess, executedData = pcall(function()
-		return json.encode({
-			Order = {
-				Id = orderId,
-				DominantToken = validPair[2],
-				SwapToken = validPair[1],
-				Sender = targetOrder.Creator,
-				Receiver = auctionBids.HighestBidder,
-				Quantity = tostring(quantity),
-				Price = tostring(auctionBids.HighestBid),
-				CreatedAt = targetOrder.DateCreated,
-				EndedAt = args.timestamp,
-				ExecutionTime = args.timestamp
-			}
-		})
-	end)
-
-	ao.send({
-		Target = ACTIVITY_PROCESS,
-		Action = 'Update-Executed-Orders',
-		Data = executedDataSuccess and executedData or ''
+	-- Also mark order as executed/completed internally so it appears in completed orders
+	activity.recordExecutedOrder({
+		Id = orderId,
+		DominantToken = validPair[2],
+		SwapToken = validPair[1],
+		Sender = targetOrder.Creator,
+		Receiver = auctionBids.HighestBidder,
+		Quantity = tostring(quantity),
+		Price = tostring(auctionBids.HighestBid),
+		CreatedAt = targetOrder.DateCreated,
+		EndedAt = args.timestamp,
+		ExecutionTime = args.timestamp
 	})
 
 	-- Remove the auction from orderbook
@@ -440,32 +411,22 @@ function english_auction.handleArioOrder(args, validPair, pairIndex)
 		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
-	-- Send order data to activity tracking process
-	local limitDataSuccess, limitData = pcall(function()
-		return json.encode({
-			Order = {
-				Id = args.orderId,
-				DominantToken = args.dominantToken,
-				SwapToken = args.swapToken,
-				Sender = args.sender,
-				Receiver = nil,
-				Quantity = tostring(args.quantity),
-				Price = args.price and tostring(args.price),
-				CreatedAt = args.createdAt,
-				OrderType = 'english',
-				Domain = args.domain,
-				ExpirationTime = args.expirationTime,
-				OwnershipType = args.ownershipType,
-				LeaseStartTimestamp = args.leaseStartTimestamp,
-				LeaseEndTimestamp = args.leaseEndTimestamp
-			}
-		})
-	end)
-
-	ao.send({
-		Target = ACTIVITY_PROCESS,
-		Action = 'Update-Listed-Orders',
-		Data = limitDataSuccess and limitData or ''
+	-- Record listed order internally
+	activity.recordListedOrder({
+		Id = args.orderId,
+		DominantToken = args.dominantToken,
+		SwapToken = args.swapToken,
+		Sender = args.sender,
+		Receiver = nil,
+		Quantity = tostring(args.quantity),
+		Price = args.price and tostring(args.price),
+		CreatedAt = args.createdAt,
+		OrderType = 'english',
+		Domain = args.domain,
+		ExpirationTime = args.expirationTime,
+		OwnershipType = args.ownershipType,
+		LeaseStartTimestamp = args.leaseStartTimestamp,
+		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
 	-- Notify sender of successful order creation

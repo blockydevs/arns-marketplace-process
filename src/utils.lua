@@ -1,5 +1,5 @@
 local json = require('json')
-local bint = require('bint')(256)
+local bint = require('.bint')(256)
 
 local utils = {}
 if not AccruedFeesAmount then AccruedFeesAmount = 0 end
@@ -275,44 +275,6 @@ function utils.executeTokenTransfers(args, currentOrderEntry, validPair, calcula
 			Quantity = tostring(calculatedFillAmount)
 		}
 	})
-end
-
--- Helper function to record match and send activity data
-function utils.recordMatch(args, currentOrderEntry, validPair, calculatedFillAmount)
-	-- Record the successful match
-	local match = {
-		Id = currentOrderEntry.Id,
-		Quantity = calculatedFillAmount,
-		Price = tostring(currentOrderEntry.Price)
-	}
-
-	-- Send match data to activity tracking
-	local matchedDataSuccess, matchedData = pcall(function()
-		return json.encode({
-			Order = {
-				Id = currentOrderEntry.Id,
-				MatchId = args.orderId,
-				DominantToken = validPair[2],
-				SwapToken = validPair[1],
-				Sender = currentOrderEntry.Creator,
-				Receiver = args.sender,
-				Quantity = calculatedFillAmount,
-				--Use executionPrice if it exists for dutch order, otherwise original price.
-				Price = args.executionPrice or tostring(currentOrderEntry.Price),
-				CreatedAt = args.createdAt,
-				EndedAt = args.createdAt,
-				ExecutionTime = args.createdAt
-			}
-		})
-	end)
-
-	ao.send({
-		Target = ACTIVITY_PROCESS,
-		Action = 'Update-Executed-Orders',
-		Data = matchedDataSuccess and matchedData or ''
-	})
-
-	return match
 end
 
 --- @class PaginationTag

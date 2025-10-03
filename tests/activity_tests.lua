@@ -383,7 +383,7 @@ utils.test('normalizeOrderTimestamps should convert timestamps to numbers',
 		}
 		
 		-- Call the helper function directly
-		local result = activity.normalizeOrderTimestamps(order)
+		local result = activity._internal.normalizeOrderTimestamps(order)
 		
 		return result
 	end,
@@ -411,7 +411,7 @@ utils.test('computeListedStatus should determine correct status for expired orde
 		local now = 1722535711000 -- Current time after expiration
 		
 		-- Call the helper function directly
-		local status, endedAt = activity.computeListedStatus(order, now)
+		local status, endedAt = activity._internal.computeListedStatus(order, now)
 		
 		return {
 			status = status,
