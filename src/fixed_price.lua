@@ -1,7 +1,9 @@
-local bint = require('bint')(256)
+local bint = require('.bint')(256)
 local json = require('json')
 
 local utils = require('utils')
+local helpers = require('helpers')
+local activity = require('activity')
 
 local fixed_price = {}
 
@@ -47,32 +49,22 @@ function fixed_price.handleArioOrder(args, validPair, pairIndex)
 		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
-	-- Send order data to activity tracking process
-	local limitDataSuccess, limitData = pcall(function()
-		return json.encode({
-			Order = {
-				Id = args.orderId,
-				DominantToken = args.dominantToken,
-				SwapToken = args.swapToken,
-				Sender = args.sender,
-				Receiver = nil,
-				Quantity = tostring(args.quantity),
-				Price = args.price and tostring(args.price),
-				CreatedAt = args.createdAt,
-				OrderType = 'fixed',
-				Domain = args.domain,
-				ExpirationTime = args.expirationTime,
-				OwnershipType = args.ownershipType,
-				LeaseStartTimestamp = args.leaseStartTimestamp,
-				LeaseEndTimestamp = args.leaseEndTimestamp
-			}
-		})
-	end)
-
-	ao.send({
-		Target = ACTIVITY_PROCESS,
-		Action = 'Update-Listed-Orders',
-		Data = limitDataSuccess and limitData or ''
+	-- Record listed order internally
+	activity.recordListedOrder({
+		Id = args.orderId,
+		DominantToken = args.dominantToken,
+		SwapToken = args.swapToken,
+		Sender = args.sender,
+		Receiver = nil,
+		Quantity = tostring(args.quantity),
+		Price = args.price and tostring(args.price),
+		CreatedAt = args.createdAt,
+		OrderType = 'fixed',
+		Domain = args.domain,
+		ExpirationTime = args.expirationTime,
+		OwnershipType = args.ownershipType,
+		LeaseStartTimestamp = args.leaseStartTimestamp,
+		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
 	-- Notify sender of successful order creation
@@ -173,7 +165,7 @@ function fixed_price.handleAntOrder(args, validPair, pairIndex)
 				end
 
 				-- Record the match
-				local match = utils.recordMatch(args, currentOrderEntry, validPair, calculatedFillAmount)
+				local match = helpers.recordMatch(args, currentOrderEntry, validPair, calculatedFillAmount)
 				table.insert(matches, match)
 
 				-- Mark the order index for removal

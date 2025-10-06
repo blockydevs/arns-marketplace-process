@@ -1,5 +1,7 @@
 local utils = require('utils')
-local bint = require('bint')(256)
+local helpers = require('helpers')
+local activity = require('activity')
+local bint = require('.bint')(256)
 local json = require('json')
 
 local dutch_auction = {}
@@ -32,35 +34,24 @@ function dutch_auction.handleArioOrder(args, validPair, pairIndex)
 		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
-	-- Send order data to activity tracking process
-	local limitDataSuccess, limitData = pcall(function()
-		return json.encode({
-			Order = {
-				Id = args.orderId,
-				DominantToken = args.dominantToken,
-				SwapToken = args.swapToken,
-				Sender = args.sender,
-				Receiver = nil,
-				Quantity = tostring(args.quantity),
-				Price = args.price and tostring(args.price),
-				ExpirationTime = args.expirationTime,
-				CreatedAt = args.createdAt,
-				OrderType = 'dutch',
-				MinimumPrice = args.minimumPrice and tostring(args.minimumPrice),
-				DecreaseInterval = args.decreaseInterval and tostring(args.decreaseInterval),
-				DecreaseStep = tostring(decreaseStep),
-				Domain = args.domain,
-				OwnershipType = args.ownershipType,
-				LeaseStartTimestamp = args.leaseStartTimestamp,
-				LeaseEndTimestamp = args.leaseEndTimestamp
-			}
-		})
-	end)
-
-	ao.send({
-		Target = ACTIVITY_PROCESS,
-		Action = 'Update-Listed-Orders',
-		Data = limitDataSuccess and limitData or ''
+	activity.recordListedOrder({
+		Id = args.orderId,
+		DominantToken = args.dominantToken,
+		SwapToken = args.swapToken,
+		Sender = args.sender,
+		Receiver = nil,
+		Quantity = tostring(args.quantity),
+		Price = args.price and tostring(args.price),
+		ExpirationTime = args.expirationTime,
+		CreatedAt = args.createdAt,
+		OrderType = 'dutch',
+		MinimumPrice = args.minimumPrice and tostring(args.minimumPrice),
+		DecreaseInterval = args.decreaseInterval and tostring(args.decreaseInterval),
+		DecreaseStep = tostring(decreaseStep),
+		Domain = args.domain,
+		OwnershipType = args.ownershipType,
+		LeaseStartTimestamp = args.leaseStartTimestamp,
+		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
 	-- Notify sender of successful order creation
@@ -181,7 +172,7 @@ function dutch_auction.handleAntOrder(args, validPair, pairIndex)
 			end
 
 			-- Record the match
-			local match = utils.recordMatch(args, currentOrderEntry, validPair, calculatedFillAmount)
+			local match = helpers.recordMatch(args, currentOrderEntry, validPair, calculatedFillAmount)
 			table.insert(matches, match)
 
 			-- Mark the order index for removal

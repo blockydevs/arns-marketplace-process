@@ -1,16 +1,15 @@
-local bint = require('bint')(256)
+local bint = require('.bint')(256)
 
 local utils = require('utils')
 local json = require('json')
 local fixed_price = require('fixed_price')
 local dutch_auction = require('dutch_auction')
 local english_auction = require('english_auction')
+local activity = require('activity')
+
 if Name ~= 'ANT Marketplace' then
 	Name = 'ANT Marketplace'
 end
-
--- CHANGEME
-ACTIVITY_PROCESS = 'Jj8LhgFLmCE_BAMys_zoTDRx8eYXsSl3-BMBIov8n9E'
 
 -- Orderbook {
 -- 	Pair [TokenId, TokenId],
@@ -358,20 +357,8 @@ function ucm.cancelOrder(msg)
 			return
 		end
 
-		-- Get order info from activity process
-		local activityQuery = ao.send({
-			Target = ACTIVITY_PROCESS,
-			Action = 'Get-Order-By-Id',
-			Data = json.encode({ OrderId = data.OrderId }),
-			Tags = {
-				Action = 'Get-Order-By-Id',
-				OrderId = data.OrderId,
-				Functioninvoke = "true"
-			}
-		}).receive()
-
-		local activityDecodeCheck, activityData = utils.decodeMessageData(activityQuery.Data)
-		if not activityDecodeCheck or not activityData then
+		local activityData = activity.findOrderById(data.OrderId, msg.Timestamp)
+		if not activityData then
 			ao.send({
 				Target = msg.From,
 				Action = 'Action-Response',
@@ -446,28 +433,18 @@ function ucm.cancelOrder(msg)
 				Tags = { Status = 'Success', Message = 'Order cancelled', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' }
 			})
 
-			-- Notify activity process of cancellation
-			local cancelledDataSuccess, cancelledData = pcall(function()
-				return json.encode({
-					Order = {
-						Id = data.OrderId,
-						DominantToken = activityData.DominantToken,
-						SwapToken = activityData.SwapToken,
-						Sender = msg.From,
-						Receiver = nil,
-						Quantity = tostring(activityData.Quantity),
-						Price = tostring(activityData.Price),
-						CreatedAt = msg.Timestamp,
-						EndedAt = msg.Timestamp,
-						CancellationTime = msg.Timestamp
-					}
-				})
-			end)
-
-			ao.send({
-				Target = ACTIVITY_PROCESS,
-				Action = 'Update-Cancelled-Orders',
-				Data = cancelledDataSuccess and cancelledData or ''
+			-- Record cancellation internally
+			activity.recordCancelledOrder({
+				Id = data.OrderId,
+				DominantToken = activityData.DominantToken,
+				SwapToken = activityData.SwapToken,
+				Sender = msg.From,
+				Receiver = nil,
+				Quantity = tostring(activityData.Quantity),
+				Price = tostring(activityData.Price),
+				CreatedAt = msg.Timestamp,
+				EndedAt = msg.Timestamp,
+				CancellationTime = msg.Timestamp
 			})
 		else
 			ao.send({
