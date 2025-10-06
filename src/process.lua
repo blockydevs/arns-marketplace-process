@@ -127,7 +127,7 @@ Handlers.add('Credit-Notice', Handlers.utils.hasMatchingTag('Action', 'Credit-No
 	end
 
 	-- If Order-Action then create the order
-	if (Handlers.utils.hasMatchingTag('Action', 'X-Order-Action') and msg.Tags['X-Order-Action'] == 'Create-Order') then
+	if msg.Tags['X-Order-Action'] == 'Create-Order' then
 		-- Validate that at least one token in the trade is ARIO
 		local isArioValid, arioError = utils.validateArioInTrade(msg.From, msg.Tags['X-Swap-Token'])
 		if not isArioValid then
