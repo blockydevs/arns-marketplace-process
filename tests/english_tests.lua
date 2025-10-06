@@ -54,8 +54,15 @@ end
 -- Helper function to reset state for tests
 local function resetState()
 	sentMessages = {}
+	transfers = {}
 	Orderbook = {}
 	EnglishAuctionBids = {}
+	ListedOrders = {}
+	ExecutedOrders = {}
+	CancelledOrders = {}
+	SalesByAddress = {}
+	PurchasesByAddress = {}
+	AuctionBids = {}
 end
 
 -- Helper function to validate expected transfers
@@ -537,7 +544,7 @@ utils.test('[ENGLISH AUCTION] should fail bid on expired auction',
 
 utils.test('[ENGLISH AUCTION] should allow first bid on active auction',
 	function()
-		resetTransfers()
+		resetState()
 		
 		Orderbook = {}
 		
@@ -617,7 +624,7 @@ utils.test('[ENGLISH AUCTION] should allow first bid on active auction',
 
 utils.test('[ENGLISH AUCTION] should allow second bid and return first bid',
 	function()
-		resetTransfers()
+		resetState()
 		
 		Orderbook = {}
 		
@@ -727,7 +734,7 @@ utils.test('[ENGLISH AUCTION] should allow second bid and return first bid',
 
 utils.test('[ENGLISH AUCTION] should fail bid lower than current highest',
 	function()
-		resetTransfers()
+		resetState()
 		
 		Orderbook = {}
 		EnglishAuctionBids = {}
@@ -1138,7 +1145,7 @@ utils.test('[ENGLISH AUCTION] should fail first bid below minimum price',
 
 utils.test('[ENGLISH AUCTION] should fail bid that does not meet minimum 1 ARIO increment',
 	function()
-		resetTransfers()
+		resetState()
 
 		Orderbook = {}
 

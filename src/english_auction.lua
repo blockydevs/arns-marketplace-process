@@ -128,20 +128,10 @@ function english_auction.handleAntOrder(args, validPair, pairIndex)
 		return
 	end
 
-	-- Ensure bidding is allowed only on active orders (via Activity status)
-		local activityQuery = ao.send({
-		Target = ACTIVITY_PROCESS,
-		Action = 'Get-Order-By-Id',
-		Data = json.encode({ OrderId = targetOrder.Id }),
-		Tags = {
-			Action = 'Get-Order-By-Id',
-			OrderId = targetOrder.Id,
-			Functioninvoke = "true"
-		}
-	}).receive()
-
-	local activityDecodeCheck, activityData = utils.decodeMessageData(activityQuery.Data)
-	if not activityDecodeCheck or not activityData or activityData.Status ~= 'active' then
+	-- Ensure bidding is allowed only on active orders (via internal Activity state)
+	local activityData = activity.findOrderById(targetOrder.Id, args.createdAt)
+	print('activityData', activityData.Status)
+	if not activityData or activityData.Status ~= 'active' then
 				utils.handleError({
 			Target = args.sender,
 			Action = 'Order-Error',
