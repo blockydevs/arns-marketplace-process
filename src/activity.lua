@@ -17,19 +17,19 @@ if not AuctionBids then AuctionBids = {} end
 -- Normalize timestamp fields for a single order copy
 local function normalizeOrderTimestamps(oc)
 	if oc.CreatedAt then
-		oc.CreatedAt = math.floor(tonumber(oc.CreatedAt))
+		oc.CreatedAt = tonumber(oc.CreatedAt)
 	end
 	if oc.ExpirationTime then
-		oc.ExpirationTime = math.floor(tonumber(oc.ExpirationTime))
+		oc.ExpirationTime = tonumber(oc.ExpirationTime)
 	end
 	if oc.LeaseStartTimestamp then
-		oc.LeaseStartTimestamp = math.floor(tonumber(oc.LeaseStartTimestamp))
+		oc.LeaseStartTimestamp = tonumber(oc.LeaseStartTimestamp)
 	end
 	if oc.LeaseEndTimestamp then
-		oc.LeaseEndTimestamp = math.floor(tonumber(oc.LeaseEndTimestamp))
+		oc.LeaseEndTimestamp = tonumber(oc.LeaseEndTimestamp)
 	end
 	if oc.EndedAt then
-		oc.EndedAt = math.floor(tonumber(oc.EndedAt))
+		oc.EndedAt = tonumber(oc.EndedAt)
 	end
 	return oc
 end
@@ -60,7 +60,7 @@ local function computeListedStatus(order, now)
 	local status = 'active'
 	local endedAt = nil
 	if order.ExpirationTime then
-		local expirationTime = math.floor(tonumber(order.ExpirationTime))
+		local expirationTime = tonumber(order.ExpirationTime)
 		if now >= expirationTime then
 			if order.OrderType == 'english' then
 				local auctionBids = AuctionBids[order.OrderId]
@@ -155,7 +155,7 @@ end
 function activity.getListedOrders(msg)
 	local page = utils.parsePaginationTags(msg)
 
-	local now = math.floor(tonumber(msg.Timestamp))
+	local now = tonumber(msg.Timestamp)
 	local active, ready = getListedSnapshot(now)
 	local ordersArray = {}
 	for _, oc in ipairs(active) do table.insert(ordersArray, oc) end
@@ -177,7 +177,7 @@ end
 function activity.getCompletedOrders(msg)
 	local page = utils.parsePaginationTags(msg)
 
-	local now = math.floor(tonumber(msg.Timestamp))
+	local now = tonumber(msg.Timestamp)
 	local cancelled = getCancelledSnapshot()
 	local settled = getExecutedSnapshot()
 	local _, _, expired = getListedSnapshot(now)
@@ -225,7 +225,7 @@ function activity.getOrderById(msg)
 		return
 	end
 
-	local now = math.floor(tonumber(msg.Timestamp))
+	local now = tonumber(msg.Timestamp)
 	local active, ready, expired = getListedSnapshot(now)
 	local listedById = {}
 	for _, oc in ipairs(active) do listedById[oc.OrderId] = oc end
@@ -267,7 +267,7 @@ end
 -- Internal helper: find order by id without messaging
 function activity.findOrderById(orderId, now)
     if not orderId then return nil end
-    local nowNum = math.floor(tonumber(now or 0))
+    local nowNum = tonumber(now or 0)
     local active, ready, expired = getListedSnapshot(nowNum)
     local listedById = {}
     for _, oc in ipairs(active) do listedById[oc.OrderId] = oc end
@@ -296,7 +296,7 @@ function activity.getActivity(msg)
 		return
 	end
 
-	local now = math.floor(tonumber(msg.Timestamp))
+	local now = tonumber(msg.Timestamp)
 	local active, ready, expired = getListedSnapshot(now)
 	local executed = getExecutedSnapshot()
 	local cancelled = getCancelledSnapshot()
