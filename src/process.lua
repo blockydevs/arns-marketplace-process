@@ -3,6 +3,7 @@ local json = require('json')
 local ucm = require('ucm')
 local activity = require('activity')
 local utils = require('utils')
+local handler_utils = require('handler_utils')
 
 
 -- CHANGEME
@@ -21,37 +22,37 @@ end
 
 -- Activity process handlers
 -- Get listed orders
-Handlers.add('Get-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Listed-Orders'), activity.getListedOrders)
+handler_utils.createActionHandler('Get-Listed-Orders', activity.getListedOrders)
 
 -- Get completed orders
-Handlers.add('Get-Completed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Completed-Orders'), activity.getCompletedOrders)
+handler_utils.createActionHandler('Get-Completed-Orders', activity.getCompletedOrders)
 
 -- Get order by ID
-Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Order-By-Id'), activity.getOrderById)
+handler_utils.createActionHandler('Get-Order-By-Id', activity.getOrderById)
 
 -- Read activity
-Handlers.add('Get-Activity', Handlers.utils.hasMatchingTag('Action', 'Get-Activity'), activity.getActivity)
+handler_utils.createActionHandler('Get-Activity', activity.getActivity)
 
 -- Read order counts by address
-Handlers.add('Get-Order-Counts-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Order-Counts-By-Address'), activity.getOrderCountsByAddress)
+handler_utils.createActionHandler('Get-Order-Counts-By-Address', activity.getOrderCountsByAddress)
 
-Handlers.add('Get-Sales-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Sales-By-Address'), activity.getSalesByAddress)
+handler_utils.createActionHandler('Get-Sales-By-Address', activity.getSalesByAddress)
 
-Handlers.add('Get-UCM-Purchase-Amount', Handlers.utils.hasMatchingTag('Action', 'Get-UCM-Purchase-Amount'), activity.getUCMPurchaseAmount)
+handler_utils.createActionHandler('Get-UCM-Purchase-Amount', activity.getUCMPurchaseAmount)
 
-Handlers.add('Get-Volume', Handlers.utils.hasMatchingTag('Action', 'Get-Volume'), activity.getVolume)
+handler_utils.createActionHandler('Get-Volume', activity.getVolume)
 
-Handlers.add('Get-Most-Traded-Tokens', Handlers.utils.hasMatchingTag('Action', 'Get-Most-Traded-Tokens'), activity.getMostTradedTokens)
+handler_utils.createActionHandler('Get-Most-Traded-Tokens', activity.getMostTradedTokens)
 
-Handlers.add('Get-Activity-Lengths', Handlers.utils.hasMatchingTag('Action', 'Get-Activity-Lengths'), activity.getActivityLengths)
+handler_utils.createActionHandler('Get-Activity-Lengths', activity.getActivityLengths)
 
-Handlers.add('Migrate-Activity-Dryrun', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Dryrun'), activity.migrateActivityDryrun)
+handler_utils.createActionHandler('Migrate-Activity-Dryrun', activity.migrateActivityDryrun)
 
-Handlers.add('Migrate-Activity', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity'), activity.migrateActivity)
+handler_utils.createActionHandler('Migrate-Activity', activity.migrateActivity)
 
-Handlers.add('Migrate-Activity-Batch', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Batch'), activity.migrateActivityBatch)
+handler_utils.createActionHandler('Migrate-Activity-Batch', activity.migrateActivityBatch)
 
-Handlers.add('Migrate-Activity-Stats', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Stats'), activity.migrateActivityStats)
+handler_utils.createActionHandler('Migrate-Activity-Stats', activity.migrateActivityStats)
 
 -- End of activity process handlers
 
@@ -62,8 +63,8 @@ Handlers.prepend('qualify message',
 	end
 )
 
-Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'),
-	function(msg)
+handler_utils.createActionHandler('Info',
+    function(msg)
 		ao.send({
 			Target = msg.From,
 			Action = 'Read-Success',
@@ -72,10 +73,10 @@ Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'),
 				Orderbook = Orderbook
 			})
 		})
-	end)
+    end)
 
-Handlers.add('Get-Orderbook-By-Pair', Handlers.utils.hasMatchingTag('Action', 'Get-Orderbook-By-Pair'),
-	function(msg)
+handler_utils.createActionHandler('Get-Orderbook-By-Pair',
+    function(msg)
 		if not msg.Tags.DominantToken or not msg.Tags.SwapToken then return end
 		local pairIndex = ucm.getPairIndex({ msg.Tags.DominantToken, msg.Tags.SwapToken })
 
@@ -86,9 +87,9 @@ Handlers.add('Get-Orderbook-By-Pair', Handlers.utils.hasMatchingTag('Action', 'G
 				Data = json.encode({ Orderbook = Orderbook[pairIndex] })
 			})
 		end
-	end)
+    end)
 
-Handlers.add('Credit-Notice', Handlers.utils.hasMatchingTag('Action', 'Credit-Notice'), function(msg)
+handler_utils.createActionHandler('Credit-Notice', function(msg)
 	if not msg.Tags['X-Dominant-Token'] or msg.From ~= msg.Tags['X-Dominant-Token'] then return end
 
 	local data = {
@@ -203,11 +204,11 @@ Handlers.add('Credit-Notice', Handlers.utils.hasMatchingTag('Action', 'Credit-No
 	end
 end)
 
-Handlers.add('Cancel-Order', Handlers.utils.hasMatchingTag('Action', 'Cancel-Order'), function(msg)
+handler_utils.createActionHandler('Cancel-Order', function(msg)
     ucm.cancelOrder(msg)
 end)
 
-Handlers.add('Read-Orders', Handlers.utils.hasMatchingTag('Action', 'Read-Orders'), function(msg)
+handler_utils.createActionHandler('Read-Orders', function(msg)
 	if msg.From == ao.id then
 		local readOrders = {}
 		local pairIndex = ucm.getPairIndex({ msg.Tags.DominantToken, msg.Tags.SwapToken })
@@ -237,7 +238,7 @@ Handlers.add('Read-Orders', Handlers.utils.hasMatchingTag('Action', 'Read-Orders
 	end
 end)
 
-Handlers.add('Read-Pair', Handlers.utils.hasMatchingTag('Action', 'Read-Pair'), function(msg)
+handler_utils.createActionHandler('Read-Pair', function(msg)
 	local pairIndex = ucm.getPairIndex({ msg.Tags.DominantToken, msg.Tags.SwapToken })
 	if pairIndex > -1 then
 		ao.send({
@@ -252,7 +253,7 @@ Handlers.add('Read-Pair', Handlers.utils.hasMatchingTag('Action', 'Read-Pair'), 
 	end
 end)
 
-Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-Auction'), function(msg)
+handler_utils.createActionHandler('Settle-Auction', function(msg)
 	print('Settling auctionXXX')
 	local decodeCheck, data = utils.decodeMessageData(msg.Data)
 	
@@ -302,7 +303,7 @@ Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-A
 	print('Settled auction')
 end)
 
-Handlers.add('Withdraw-Fees', Handlers.utils.hasMatchingTag('Action', 'Withdraw-Fees'), function(msg)
+handler_utils.createActionHandler('Withdraw-Fees', function(msg)
 	-- Only the process owner can withdraw fees
 	if msg.From ~= msg.Owner then
 		ao.send({ Target = msg.From, Action = 'Validation-Error', Tags = { Status = 'Error', Message = 'Unauthorized: only process owner can withdraw fees' } })
