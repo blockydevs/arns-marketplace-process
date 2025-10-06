@@ -1,7 +1,12 @@
 local json = require('json')
 
 local ucm = require('ucm')
+local activity = require('activity')
 local utils = require('utils')
+
+
+-- CHANGEME
+ARIO_TOKEN_PROCESS_ID = 'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA'
 
 function Trusted(msg)
 	local mu = 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY'
@@ -13,6 +18,42 @@ function Trusted(msg)
 	end
 	return true
 end
+
+-- Activity process handlers
+-- Get listed orders
+Handlers.add('Get-Listed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Listed-Orders'), activity.getListedOrders)
+
+-- Get completed orders
+Handlers.add('Get-Completed-Orders', Handlers.utils.hasMatchingTag('Action', 'Get-Completed-Orders'), activity.getCompletedOrders)
+
+-- Get order by ID
+Handlers.add('Get-Order-By-Id', Handlers.utils.hasMatchingTag('Action', 'Get-Order-By-Id'), activity.getOrderById)
+
+-- Read activity
+Handlers.add('Get-Activity', Handlers.utils.hasMatchingTag('Action', 'Get-Activity'), activity.getActivity)
+
+-- Read order counts by address
+Handlers.add('Get-Order-Counts-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Order-Counts-By-Address'), activity.getOrderCountsByAddress)
+
+Handlers.add('Get-Sales-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Sales-By-Address'), activity.getSalesByAddress)
+
+Handlers.add('Get-UCM-Purchase-Amount', Handlers.utils.hasMatchingTag('Action', 'Get-UCM-Purchase-Amount'), activity.getUCMPurchaseAmount)
+
+Handlers.add('Get-Volume', Handlers.utils.hasMatchingTag('Action', 'Get-Volume'), activity.getVolume)
+
+Handlers.add('Get-Most-Traded-Tokens', Handlers.utils.hasMatchingTag('Action', 'Get-Most-Traded-Tokens'), activity.getMostTradedTokens)
+
+Handlers.add('Get-Activity-Lengths', Handlers.utils.hasMatchingTag('Action', 'Get-Activity-Lengths'), activity.getActivityLengths)
+
+Handlers.add('Migrate-Activity-Dryrun', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Dryrun'), activity.migrateActivityDryrun)
+
+Handlers.add('Migrate-Activity', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity'), activity.migrateActivity)
+
+Handlers.add('Migrate-Activity-Batch', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Batch'), activity.migrateActivityBatch)
+
+Handlers.add('Migrate-Activity-Stats', Handlers.utils.hasMatchingTag('Action', 'Migrate-Activity-Stats'), activity.migrateActivityStats)
+
+-- End of activity process handlers
 
 Handlers.prepend('qualify message',
 	Trusted,
@@ -55,34 +96,49 @@ Handlers.add('Credit-Notice', Handlers.utils.hasMatchingTag('Action', 'Credit-No
 		Quantity = msg.Tags.Quantity
 	}
 
+	-- Ensure we refund deposits on early validation failures
+	local function refundAndError(message, action)
+		utils.handleError({
+			Target = data.Sender,
+			Action = action or 'Validation-Error',
+			Message = message,
+			Quantity = msg.Tags.Quantity,
+			TransferToken = msg.From,
+			OrderGroupId = msg.Tags['X-Group-ID'] or 'None'
+		})
+	end
+
 	-- Check if sender is a valid address
 	if not utils.checkValidAddress(data.Sender) then
-		ao.send({ Target = msg.From, Action = 'Validation-Error', Tags = { Status = 'Error', Message = 'Sender must be a valid address' } })
+		refundAndError('Sender must be a valid address')
 		return
 	end
 
 	-- Check if quantity is a valid integer greater than zero
 	if not utils.checkValidAmount(data.Quantity) then
-		ao.send({ Target = msg.From, Action = 'Validation-Error', Tags = { Status = 'Error', Message = 'Quantity must be an integer greater than zero' } })
+		refundAndError('Quantity must be an integer greater than zero')
 		return
 	end
 
 	-- Check if all required fields are present
 	if not data.Sender or not data.Quantity then
-		ao.send({
-			Target = msg.From,
-			Action = 'Input-Error',
-			Tags = {
-				Status = 'Error',
-				Message =
-				'Invalid arguments, required { Sender, Quantity }'
-			}
-		})
+		refundAndError('Invalid arguments, required { Sender, Quantity }', 'Input-Error')
 		return
 	end
 
 	-- If Order-Action then create the order
 	if (Handlers.utils.hasMatchingTag('Action', 'X-Order-Action') and msg.Tags['X-Order-Action'] == 'Create-Order') then
+		-- Validate that at least one token in the trade is ARIO
+		local isArioValid, arioError = utils.validateArioInTrade(msg.From, msg.Tags['X-Swap-Token'])
+		if not isArioValid then
+			ao.send({
+				Target = msg.From,
+				Action = 'Validation-Error',
+				Tags = { Status = 'Error', Message = arioError or 'At least one token in the trade must be ARIO' }
+			})
+			return
+		end
+
 		local orderArgs = {
 			orderId = msg.Id,
 			orderGroupId = msg.Tags['X-Group-ID'] or 'None',
@@ -90,8 +146,13 @@ Handlers.add('Credit-Notice', Handlers.utils.hasMatchingTag('Action', 'Credit-No
 			swapToken = msg.Tags['X-Swap-Token'],
 			sender = data.Sender,
 			quantity = msg.Tags.Quantity,
-			timestamp = msg.Timestamp,
-			blockheight = msg['Block-Height']
+			createdAt = msg.Timestamp,
+			blockheight = msg['Block-Height'],
+			orderType = msg.Tags['X-Order-Type'] or 'fixed',
+			expirationTime = msg.Tags['X-Expiration-Time'] and tonumber(msg.Tags['X-Expiration-Time']),
+			minimumPrice = msg.Tags['X-Minimum-Price'],
+			decreaseInterval = msg.Tags['X-Decrease-Interval'],
+			requestedOrderId = msg.Tags['X-Requested-Order-Id']
 		}
 
 		if msg.Tags['X-Price'] then
@@ -101,133 +162,49 @@ Handlers.add('Credit-Notice', Handlers.utils.hasMatchingTag('Action', 'Credit-No
 			orderArgs.transferDenomination = msg.Tags['X-Transfer-Denomination']
 		end
 
-		ucm.createOrder(orderArgs)
-	end
-end)
-
-Handlers.add('Migrate-Listings', Handlers.utils.hasMatchingTag('Action', 'Migrate-Listings'), function(msg)
-	if not msg.Data.MigrateTo then
-		print('MigrateTo must be provided')
-		return
-	end
-
-	for _, pair in ipairs(Orderbook) do
-		for _, existingOrder in ipairs(pair.Orders) do
-			if existingOrder.Creator == msg.From then
-				print('Changing order creator to ' .. msg.Data.MigrateTo)
-				existingOrder.Creator = msg.Data.MigrateTo
+		if msg.Tags['X-Swap-Token'] == ARIO_TOKEN_PROCESS_ID then
+			-- Fetch domain from ARIO token process
+			local domainPaginatedRecords = ao.send({
+				Target = ARIO_TOKEN_PROCESS_ID,
+				Action = "Paginated-Records",
+				Data = "",
+				Tags = {
+					Action = "Paginated-Records",
+					Filters = string.format("{\"processId\":[\"%s\"]}", msg.From)
+				}
+			}).receive()
+			
+			local decodeCheck, domainData = utils.decodeMessageData(domainPaginatedRecords.Data)
+			local items = (decodeCheck and domainData and domainData.items) or nil
+			if not items or type(items) ~= 'table' or not items[1] or not items[1].name or not items[1].type then
+				refundAndError('Failed to fetch domain')
+				return
 			end
+			local first = items[1]
+			local domain = first.name
+			local ownershipType = first.type
+
+			if ownershipType == "lease" then
+				orderArgs.leaseStartTimestamp = first.startTimestamp
+				orderArgs.leaseEndTimestamp = first.endTimestamp
+			end
+			orderArgs.domain = domain
+			orderArgs.ownershipType = ownershipType
+		end
+
+		-- Protect order creation to refund on unexpected runtime errors
+		local ok, err = pcall(function()
+			ucm.createOrder(orderArgs)
+		end)
+		if not ok then
+			refundAndError('Order creation failed: ' .. tostring(err), 'Order-Error')
+			return
 		end
 	end
 end)
 
 Handlers.add('Cancel-Order', Handlers.utils.hasMatchingTag('Action', 'Cancel-Order'), function(msg)
-	local decodeCheck, data = utils.decodeMessageData(msg.Data)
-
-	if decodeCheck and data then
-		if not data.Pair or not data.OrderTxId then
-			ao.send({
-				Target = msg.From,
-				Action = 'Input-Error',
-				Tags = { Status = 'Error', Message = 'Invalid arguments, required { Pair: [TokenId, TokenId], OrderTxId }' }
-			})
-			return
-		end
-		-- Check if Pair and OrderTxId are valid
-		local validPair, pairError = utils.validatePairData(data.Pair)
-		local validOrderTxId = utils.checkValidAddress(data.OrderTxId)
-
-		if not validPair or not validOrderTxId then
-			local message = nil
-
-			if not validOrderTxId then message = 'OrderTxId is not a valid address' end
-			if not validPair then message = pairError or 'Error validating pair' end
-
-			ao.send({ Target = msg.From, Action = 'Validation-Error', Tags = { Status = 'Error', Message = message or 'Error validating order cancel input' } })
-			return
-		end
-
-		-- Ensure the pair exists
-		local pairIndex = ucm.getPairIndex(validPair)
-
-		-- If the pair exists then search for the order based on OrderTxId
-		if pairIndex > -1 then
-			local order = nil
-			local orderIndex = nil
-
-			for i, currentOrderEntry in ipairs(Orderbook[pairIndex].Orders) do
-				if data.OrderTxId == currentOrderEntry.Id then
-					order = currentOrderEntry
-					orderIndex = i
-				end
-			end
-
-			-- The order is not found
-			if not order then
-				ao.send({ Target = msg.From, Action = 'Action-Response', Tags = { Status = 'Error', Message = pairError or 'Order not found', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' } })
-				return
-			end
-
-			-- Check if the sender is the order creator
-			if msg.From ~= order.Creator then
-				ao.send({ Target = msg.From, Action = 'Action-Response', Tags = { Status = 'Error', Message = pairError or 'Unauthorized to cancel this order', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' } })
-				return
-			end
-
-			if order and orderIndex > -1 then
-				-- Return funds to the creator
-				ao.send({
-					Target = order.Token,
-					Action = 'Transfer',
-					Tags = {
-						Recipient = order.Creator,
-						Quantity = order.Quantity
-					}
-				})
-
-				-- Remove the order from the current table
-				table.remove(Orderbook[pairIndex].Orders, orderIndex)
-
-				ao.send({ Target = msg.From, Action = 'Action-Response', Tags = { Status = 'Success', Message = 'Order cancelled', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' } })
-
-				local cancelledDataSuccess, cancelledData = pcall(function()
-					return json.encode({
-						Order = {
-							Id = data.OrderTxId,
-							DominantToken = validPair[1],
-							SwapToken = validPair[2],
-							Sender = msg.From,
-							Receiver = nil,
-							Quantity = tostring(order.Quantity),
-							Price = tostring(order.Price),
-							Timestamp = msg.Timestamp
-						}
-					})
-				end)
-
-				ao.send({
-					Target = ACTIVITY_PROCESS,
-					Action = 'Update-Cancelled-Orders',
-					Data = cancelledDataSuccess and cancelledData or ''
-				})
-			else
-				ao.send({ Target = msg.From, Action = 'Action-Response', Tags = { Status = 'Error', Message = pairError or 'Error cancelling order', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' } })
-			end
-		else
-			ao.send({ Target = msg.From, Action = 'Action-Response', Tags = { Status = 'Error', Message = pairError or 'Pair not found', ['X-Group-ID'] = data['X-Group-ID'] or 'None', Handler = 'Cancel-Order' } })
-		end
-	else
-		ao.send({
-			Target = msg.From,
-			Action = 'Input-Error',
-			Tags = {
-				Status = 'Error',
-				Message = string.format('Failed to parse data, received: %s. %s',
-					msg.Data,
-					'Data must be an object - { Pair: [TokenId, TokenId], OrderTxId }')
-			}
-		})
-	end
+    ucm.cancelOrder(msg)
 end)
 
 Handlers.add('Read-Orders', Handlers.utils.hasMatchingTag('Action', 'Read-Orders'), function(msg)
@@ -246,7 +223,7 @@ Handlers.add('Read-Orders', Handlers.utils.hasMatchingTag('Action', 'Read-Orders
 						creator = order.Creator,
 						quantity = order.Quantity,
 						price = order.Price,
-						timestamp = order.Timestamp
+						CreatedAt = order.CreatedAt
 					})
 				end
 			end
@@ -275,21 +252,77 @@ Handlers.add('Read-Pair', Handlers.utils.hasMatchingTag('Action', 'Read-Pair'), 
 	end
 end)
 
-Handlers.add('Order-Success', Handlers.utils.hasMatchingTag('Action', 'Order-Success'), function(msg)
-	if msg.From == ao.id and
-		msg.Tags.DominantToken and msg.Tags.DominantToken == DEFAULT_SWAP_TOKEN and
-		msg.Tags.SwapToken and msg.Tags.SwapToken == PIXL_PROCESS then
-		if msg.Tags.Quantity and tonumber(msg.Tags.Quantity) > 0 then
-			ao.send({
-				Target = PIXL_PROCESS,
-				Action = 'Transfer',
-				Tags = {
-					Recipient = string.rep('0', 43),
-					Quantity = msg.Tags.Quantity
-				}
-			})
-		end
+Handlers.add('Settle-Auction', Handlers.utils.hasMatchingTag('Action', 'Settle-Auction'), function(msg)
+	print('Settling auctionXXX')
+	local decodeCheck, data = utils.decodeMessageData(msg.Data)
+	
+	if not decodeCheck or not data.OrderId then
+		ao.send({
+			Target = msg.From,
+			Action = 'Input-Error',
+			Tags = { Status = 'Error', Message = 'OrderId is required' }
+		})
+		return
 	end
+	
+	-- Use internal activity lookup instead of messaging
+	local foundOrder = activity.findOrderById(data.OrderId, msg.Timestamp)
+	if not foundOrder then
+		ao.send({
+			Target = msg.From,
+			Action = 'Settlement-Error',
+			Tags = { Status = 'Error', Message = 'Order not found' }
+		})
+		return
+	end
+	
+	if foundOrder.Status ~= 'ready-for-settlement' then
+		ao.send({
+			Target = msg.From,
+			Action = 'Settlement-Error',
+			Tags = { 
+				Status = 'Error', 
+				Message = 'Order is not ready for settlement. Status: ' .. tostring(foundOrder.Status),
+				CurrentStatus = tostring(foundOrder.Status)
+			}
+		})
+		return
+	end
+	
+	local settleArgs = {
+		orderId = data.OrderId,
+		sender = msg.From,
+		timestamp = msg.Timestamp,
+		orderGroupId = msg.Tags['X-Group-ID'] or 'None',
+		dominantToken = data.DominantToken,
+		swapToken = data.SwapToken
+	}
+	
+	ucm.settleAuction(settleArgs)
+	print('Settled auction')
 end)
 
-Handlers.add('Debit-Notice', Handlers.utils.hasMatchingTag('Action', 'Debit-Notice'), function(msg) end)
+Handlers.add('Withdraw-Fees', Handlers.utils.hasMatchingTag('Action', 'Withdraw-Fees'), function(msg)
+	-- Only the process owner can withdraw fees
+	if msg.From ~= msg.Owner then
+		ao.send({ Target = msg.From, Action = 'Validation-Error', Tags = { Status = 'Error', Message = 'Unauthorized: only process owner can withdraw fees' } })
+		return
+	end
+
+	local amount = AccruedFeesAmount
+	if not amount or amount == 0 then
+		return
+	end
+
+	-- transfer fees to requester
+	ao.send({
+		Target = ARIO_TOKEN_PROCESS_ID,
+		Action = 'Transfer',
+		Tags = {
+			Recipient = msg.From,
+			Quantity = tostring(amount)
+		}
+	})
+
+	AccruedFeesAmount = 0
+end)

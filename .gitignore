@@ -6,3 +6,7 @@
 **logs
 **.DS_Store**
 **.npmrc
+.idea
+
+DEPLOYEMENT_ADDRESSES.txt
+tools/

@@ -1,0 +1,49 @@
+name: 'Tests'
+
+on:
+    workflow_dispatch:
+    pull_request:
+
+permissions:
+    contents: read
+    packages: read
+
+jobs:
+    lua-tests:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        container:
+            image: ghcr.io/blockydevs/arns-marketplace-process-tests
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+
+            -   name: Run UCM tests
+                if: ${{ always() }}
+                run: |
+                    cd tests
+                    lua ucm_tests.lua
+
+            -   name: Run Dutch auction tests
+                if: ${{ always() }}
+                run: |
+                    cd tests
+                    lua dutch_tests.lua
+
+            -   name: Run general tests
+                if: ${{ always() }}
+                run: |
+                    cd tests
+                    lua tests.lua
+
+            -   name: Run activity tests
+                if: ${{ always() }}
+                run: |
+                    cd tests
+                    lua activity_tests.lua
+
+            -   name: Run english tests
+                if: ${{ always() }}
+                run: |
+                    cd tests
+                    lua english_tests.lua
