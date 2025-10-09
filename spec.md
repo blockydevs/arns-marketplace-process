@@ -11,9 +11,8 @@ This specification describes the ARNS Marketplace's functionality, including ord
 
 1. **ARNS Tokens**: Unique tokens representing ARNS domains on the permaweb.
 2. **Order Book**: The data structure that stores active buy and sell orders for trading ARNS tokens.
-3. **Swap Token**: A token used in exchange for ARNS tokens. The default swap token is defined as `ARIO_TOKEN_PROCESS_ID`.
-
-[//]: # (@TODO update ARIO_TOKEN_PROCESS_ID)
+3. **Swap Token**: A token used in exchange for ARNS tokens. The default swap token is `ARIO_TOKEN_PROCESS_ID`.
+4. **Marketplace Process**: A single process that handles order creation, matching, auctions, settlement, cancellations, and internal activity tracking (no separate activity process).
 
 ---
 
@@ -24,17 +23,38 @@ Each pair of tokens traded is associated with an order book entry containing mul
 
 ```lua
 Orderbook = {
-    Pair = [TokenId, TokenId],
-    Orders = {
-        Id,
-        Creator,
-        Quantity,
-        OriginalQuantity,
-        Token,
-        DateCreated,
-        Price? (optional for market orders)
-    }[]
-}[]
+    {
+        Pair = [TokenId, TokenId], -- [ARIO, ANT] or [ANT, ARIO]
+        Orders = {
+            {
+                Id,
+                Creator,
+                Quantity,              -- current remaining quantity
+                OriginalQuantity,      -- original listed quantity
+                Token,                 -- dominant token process id (seller token for ARIO-dominant)
+                DateCreated,
+                Price,                 -- required for fixed/dutch/english listings
+                ExpirationTime,        -- optional; used by dutch/english
+                OrderType,             -- 'fixed' | 'dutch' | 'english'
+                -- dutch-only fields
+                MinimumPrice,
+                DecreaseInterval,
+                DecreaseStep,
+                -- metadata (from ARIO records when applicable)
+                Domain,
+                OwnershipType,         -- e.g. 'lease' or 'ownership'
+                LeaseStartTimestamp,
+                LeaseEndTimestamp
+            }
+        }[],
+        PriceData = {                 -- optional, for VWAP after trades
+            Vwap,
+            Block,
+            DominantToken,
+            MatchLogs
+        }
+    }
+} 
 ```
 
 #### 2. **Order**
@@ -45,29 +65,35 @@ Each order represents a user's intent to buy or sell a specific quantity of ARNS
 ### Functions
 
 #### 1. **getPairIndex**
-Finds the index of the token pair in the order book. This allows the system to efficiently look up and manage pairs of ARNS tokens being traded.
+Finds the index of the token pair in the order book.
 
 #### 2. **createOrder**
-Handles the creation of both market and limit orders. It:
-- Validates the token pair and ensures the quantities and prices are positive integers.
-- Executes the order by finding matches in the order book, fulfilling it as much as possible.
-- Updates the order book with any remaining quantity from the order (in the case of limit orders).
-- Notifies the creator about the success or failure of the order.
-- Records matches and updates the executed orders list.
+Creates an order and routes to the specific flow depending on dominance and order type:
+- Validates pair, ARIO-in-trade requirement, and amounts.
+- ANT-dominant (selling ANT): immediate execution against existing ARIO listings only; no orderbook listing.
+- ARIO-dominant (selling ANT for ARIO via listing): adds to orderbook for Buy-Now (fixed), Dutch, or English auction.
+- Populates metadata from ARIO records when swap token is ARIO.
 
-#### 3. **handleError**
-Handles error reporting and, if applicable, refunds the sender's tokens in case of an invalid transaction.
+#### 3. **cancelOrder**
+Cancels an active or expired order by id if requested by the creator; returns funds and records cancellation internally.
+
+#### 4. **settleAuction**
+Settles an expired English auction; transfers funds and assets, charges fees, records settlement and execution, then removes order and clears bids.
+
+#### 5. **handleError**
+Handles error reporting and refunds the sender's tokens in case of an invalid transaction.
 
 ---
 
 ### Order Types
 
-- **Fixed Orders**: Executed if there is an immediate match in orderbook, fails otherwise.
+- **Fixed**: ARIO-dominant listings added to orderbook; ANT buyers execute immediately against a specific listing, with refund of any overpayment.
+- **Dutch**: ARIO-dominant listings with decreasing price over time using `DecreaseInterval` and `DecreaseStep`; ANT buyers execute immediately at current price against a specific order.
+- **English**: ARIO-dominant listings where bidders place increasing ARIO bids; requires settlement after expiration to transfer assets to the winner.
 
 ### Processes
 
-#### 1. **ACTIVITY_PROCESS**
-Handles updating of executed orders, logging them with their relevant details (such as quantity, price, and involved parties).
+The marketplace is a single process that handles all flows (order creation, matching, settlement, cancellations) and maintains internal activity state. Activity-related actions (listed/executed/cancelled orders, bids, settlements, metrics) are recorded via internal calls.
 
 ---
 
@@ -75,25 +101,31 @@ Handles updating of executed orders, logging them with their relevant details (s
 
 1. **Order Creation**:
    - A user creates a new order to buy or sell ARNS tokens.
-   - The system checks for matching orders in the order book.
-   - If there is a match, the order is fulfilled, and tokens are transferred between buyer and seller.
-   - If there are no matching orders, the system adds the order to the order book (for limit orders).
+   - ARIO must be one side of the pair.
+   - If ANT-dominant, execute immediately against an ARIO listing or fail.
+   - If ARIO-dominant, add a new listing to the orderbook (fixed/dutch/english).
 
 2. **Order Matching**:
-   - The order book matches the buy and sell orders, prioritizing those with the most favorable prices.
-   - For market orders, the entire available quantity is filled as long as there are sufficient ARNS tokens available in the order book.
+   - Fixed: ANT buyers must meet or exceed the listed price of the specific order; excess ARIO is refunded.
+   - Dutch: ANT buyers execute against the specific order at its time-adjusted current price.
+   - English: Bids are recorded internally; highest bid replaces previous highest (which is refunded). After expiration, `settleAuction` transfers assets and records execution.
 
 ---
 
 ### Fees
 
-ARNS Marketplace captures a 0.5% fee on trades, which can be changed in `calculateFeeAmount` and `calculateSendAmount` located in `utils.lua` or in `bundle_ucm.lua` for bundled deployment.
+ARNS Marketplace captures a 0.5% fee on trades, adjustable via `calculateFeeAmount` and `calculateSendAmount` in `utils.lua` (or `bundle_ucm.lua` for bundled deployments). Fees accrue and can be withdrawn by the process owner via a management action.
 
 ---
 
 ### Error Handling
 
 Errors in the system (such as invalid token pairs, insufficient quantities, or pricing issues) are caught by the `handleError` function, which returns any necessary tokens to the user and logs the error for further analysis.
+
+Additional validation rules:
+- ARIO must be involved in every trade pair.
+- ANT tokens can only be sold in quantities of exactly 1.
+- English bids must be strictly higher than the current highest bid and at least 1 ARIO higher; first bid must meet the minimum starting price.
 
 ---
 

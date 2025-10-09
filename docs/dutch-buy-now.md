@@ -6,8 +6,7 @@ sequenceDiagram
     actor Buyer as Buyer (User/App)
     participant ARIO as ARIO Token Process
     participant ANT as ANT Token Process
-    participant Market as Marketplace Process (`src/process.lua`/`src/ucm.lua`)
-    participant Activity as Activity Process (`src/activity.lua`)
+    participant Market as Marketplace Process
     participant Treasury as Treasury (fees)
     participant Seller as Order Creator
 
