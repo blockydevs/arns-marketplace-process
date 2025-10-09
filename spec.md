@@ -14,8 +14,6 @@ This specification describes the ARNS Marketplace's functionality, including ord
 3. **Swap Token**: A token used in exchange for ARNS tokens. The default swap token is `ARIO_TOKEN_PROCESS_ID`.
 4. **Marketplace Process**: A single process that handles order creation, matching, auctions, settlement, cancellations, and internal activity tracking (no separate activity process).
 
-[//]: # (@TODO update ARIO_TOKEN_PROCESS_ID)
-
 ---
 
 ### Core Data Structures

@@ -13,7 +13,7 @@ local activity = require('activity')
 
 -- Global transfer tracking
 local transfers = {}
-ARIO_TOKEN_PROCESS_ID = ARIO_TOKEN_PROCESS_ID
+ARIO_TOKEN_PROCESS_ID = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'
 
 -- Capture sent messages for assertions
 local sentMessages = {}
