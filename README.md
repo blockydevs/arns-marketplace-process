@@ -99,7 +99,6 @@ Before running the tests, ensure you have the following installed:
 3. **Required Lua modules**: Install the dependencies
    ```bash
    luarocks install bint
-   luarocks install json-lua
    ```
 
 ### Running Tests
