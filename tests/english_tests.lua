@@ -13,7 +13,7 @@ local activity = require('activity')
 
 -- Global transfer tracking
 local transfers = {}
-ARIO_TOKEN_PROCESS_ID = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'
+ARIO_TOKEN_PROCESS_ID = ARIO_TOKEN_PROCESS_ID
 
 -- Capture sent messages for assertions
 local sentMessages = {}
@@ -107,7 +107,7 @@ utils.test('[ANT SELL] should add ANT sell order to orderbook when selling ANT t
 		ucm.createOrder({
 			orderId = 'ant-sell-order',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -129,7 +129,7 @@ utils.test('[ANT SELL] should add ANT sell order to orderbook when selling ANT t
 	end,
 	{
 		{
-			Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+			Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 			Orders = {
 				{
 					Id = 'ant-sell-order',
@@ -154,7 +154,7 @@ utils.test('[ANT SELL] should pass if expiration time is not provided',
 		ucm.createOrder({
 			orderId = 'ant-sell-order',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -168,7 +168,7 @@ utils.test('[ANT SELL] should pass if expiration time is not provided',
 	end,
 	{
 		{
-			Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+			Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 			Orders = {
 				{
 					Id = 'ant-sell-order',
@@ -193,7 +193,7 @@ utils.test('[ANT SELL] should fail if expiration time is negative',
 		ucm.createOrder({
 			orderId = 'ant-sell-order',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -217,7 +217,7 @@ utils.test('[ANT SELL] should fail if expiration time is less than current time'
 		ucm.createOrder({
 			orderId = 'ant-sell-order',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -241,7 +241,7 @@ utils.test('[ANT SELL] should fail if price is not provided',
 		ucm.createOrder({
 			orderId = 'ant-sell-order',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			createdAt = '1735689600000',
@@ -264,7 +264,7 @@ utils.test('[ANT SELL] should fail if price is negative',
 		ucm.createOrder({
 			orderId = 'ant-sell-order',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '-500000000000',
@@ -288,7 +288,7 @@ utils.test('[ANT SELL] should fail if quantity is negative',
 		ucm.createOrder({
 			orderId = 'ant-sell-order',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = '-1',
 			price = '500000000000',
@@ -312,7 +312,7 @@ utils.test('[ANT SELL] should fail if quantity is not 1',
 		ucm.createOrder({
 			orderId = 'ant-sell-order',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 2,
 			price = '500000000000',
@@ -341,7 +341,7 @@ utils.test('[ENGLISH AUCTION] should fail bid with invalid bid amount (negative)
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -356,7 +356,7 @@ utils.test('[ENGLISH AUCTION] should fail bid with invalid bid amount (negative)
 		ucm.createOrder({
 			orderId = 'bid-1',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-1',
 			quantity = -1000000000, -- Negative quantity should be rejected
@@ -376,7 +376,7 @@ utils.test('[ENGLISH AUCTION] should fail bid with invalid bid amount (negative)
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',
@@ -406,7 +406,7 @@ utils.test('[ENGLISH AUCTION] should fail bid with missing orderId',
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -420,7 +420,7 @@ utils.test('[ENGLISH AUCTION] should fail bid with missing orderId',
 		-- Try to place bid without orderId
 		ucm.createOrder({
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-1',
 			quantity = 1000000000,
@@ -448,7 +448,7 @@ utils.test('[ENGLISH AUCTION] should fail bid with missing orderId',
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',
@@ -478,7 +478,7 @@ utils.test('[ENGLISH AUCTION] should fail bid on expired auction',
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -493,7 +493,7 @@ utils.test('[ENGLISH AUCTION] should fail bid on expired auction',
 		ucm.createOrder({
 			orderId = 'bid-1',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-1',
 			quantity = 1000000000,
@@ -522,7 +522,7 @@ utils.test('[ENGLISH AUCTION] should fail bid on expired auction',
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',
@@ -552,7 +552,7 @@ utils.test('[ENGLISH AUCTION] should allow first bid on active auction',
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -567,7 +567,7 @@ utils.test('[ENGLISH AUCTION] should allow first bid on active auction',
 		ucm.createOrder({
 			orderId = 'bid-1',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-1',
 			quantity = 600000000000,
@@ -589,7 +589,7 @@ utils.test('[ENGLISH AUCTION] should allow first bid on active auction',
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',
@@ -632,7 +632,7 @@ utils.test('[ENGLISH AUCTION] should allow second bid and return first bid',
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -647,7 +647,7 @@ utils.test('[ENGLISH AUCTION] should allow second bid and return first bid',
 		ucm.createOrder({
 			orderId = 'bid-1',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-1',
 			quantity = 600000000000,
@@ -664,7 +664,7 @@ utils.test('[ENGLISH AUCTION] should allow second bid and return first bid',
 		ucm.createOrder({
 			orderId = 'bid-2',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-2',
 			quantity = 2000000000000,
@@ -693,7 +693,7 @@ utils.test('[ENGLISH AUCTION] should allow second bid and return first bid',
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',
@@ -743,7 +743,7 @@ utils.test('[ENGLISH AUCTION] should fail bid lower than current highest',
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -758,7 +758,7 @@ utils.test('[ENGLISH AUCTION] should fail bid lower than current highest',
 		ucm.createOrder({
 			orderId = 'bid-1',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-1',
 			quantity = 600000000000, -- Above minimum starting price (500000000000)
@@ -772,7 +772,7 @@ utils.test('[ENGLISH AUCTION] should fail bid lower than current highest',
 		ucm.createOrder({
 			orderId = 'bid-2',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-2',
 			quantity = 500000000000, -- Lower than current highest bid (600000000000) but above minimum
@@ -801,7 +801,7 @@ utils.test('[ENGLISH AUCTION] should fail bid lower than current highest',
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',
@@ -844,7 +844,7 @@ utils.test('[ENGLISH AUCTION] should settle auction successfully after expiratio
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -909,7 +909,7 @@ utils.test('[ENGLISH AUCTION] should settle auction successfully after expiratio
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {}
 			}
 		},
@@ -927,7 +927,7 @@ utils.test('[ENGLISH AUCTION] should fail settlement before expiration',
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -973,7 +973,7 @@ utils.test('[ENGLISH AUCTION] should fail settlement before expiration',
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',
@@ -1016,7 +1016,7 @@ utils.test('[ENGLISH AUCTION] should fail settlement with no bids',
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -1049,7 +1049,7 @@ utils.test('[ENGLISH AUCTION] should fail settlement with no bids',
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',
@@ -1079,7 +1079,7 @@ utils.test('[ENGLISH AUCTION] should fail first bid below minimum price',
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -1094,7 +1094,7 @@ utils.test('[ENGLISH AUCTION] should fail first bid below minimum price',
 		ucm.createOrder({
 			orderId = 'bid-1',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-1',
 			quantity = 1000000000, -- Below minimum starting price
@@ -1123,7 +1123,7 @@ utils.test('[ENGLISH AUCTION] should fail first bid below minimum price',
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',
@@ -1153,7 +1153,7 @@ utils.test('[ENGLISH AUCTION] should fail bid that does not meet minimum 1 ARIO 
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '500000000000',
@@ -1168,7 +1168,7 @@ utils.test('[ENGLISH AUCTION] should fail bid that does not meet minimum 1 ARIO 
 		ucm.createOrder({
 			orderId = 'bid-1',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-1',
 			quantity = 600000000000, -- Above minimum starting price
@@ -1185,7 +1185,7 @@ utils.test('[ENGLISH AUCTION] should fail bid that does not meet minimum 1 ARIO 
 		ucm.createOrder({
 			orderId = 'bid-2',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-2',
 			quantity = 600000000001, -- Only 1 unit higher than current bid (600000000000)
@@ -1214,7 +1214,7 @@ utils.test('[ENGLISH AUCTION] should fail bid that does not meet minimum 1 ARIO 
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',
@@ -1257,7 +1257,7 @@ utils.test('[ENGLISH AUCTION] should allow bid that meets minimum 1 ARIO increme
 		ucm.createOrder({
 			orderId = 'english-auction-1',
 			dominantToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT (selling ANT)
-			swapToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (wanting ARIO)
+			swapToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (wanting ARIO)
 			sender = 'ant-seller',
 			quantity = 1,
 			price = '1000000', -- 1 ARIO
@@ -1272,7 +1272,7 @@ utils.test('[ENGLISH AUCTION] should allow bid that meets minimum 1 ARIO increme
 		ucm.createOrder({
 			orderId = 'bid-1',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-1',
 			quantity = 30000000, -- Above minimum starting price (30 ARIO)
@@ -1289,7 +1289,7 @@ utils.test('[ENGLISH AUCTION] should allow bid that meets minimum 1 ARIO increme
 		ucm.createOrder({
 			orderId = 'bid-2',
 			targetAuctionId = 'english-auction-1',
-			dominantToken = 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8', -- ARIO (buying ANT)
+			dominantToken = ARIO_TOKEN_PROCESS_ID, -- ARIO (buying ANT)
 			swapToken = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', -- ANT
 			sender = 'bidder-2',
 			quantity = 31000000, -- Exactly 1 ARIO higher than current bid (31 ARIO)
@@ -1318,7 +1318,7 @@ utils.test('[ENGLISH AUCTION] should allow bid that meets minimum 1 ARIO increme
 	{
 		Orderbook = {
 			{
-				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', 'cSCcuYOpk8ZKym2ZmKu_hUnuondBeIw57Y_cBJzmXV8'},
+				Pair = {'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10', ARIO_TOKEN_PROCESS_ID},
 				Orders = {
 					{
 						Id = 'english-auction-1',

@@ -113,8 +113,11 @@ To run the test suite:
 
 2. Run the tests:
    ```bash
-   lua ucm_tests.lua
+   lua activity_tests.lua
    lua dutch_tests.lua
+   lua english_tests.lua
+   lua tests.lua
+   lua ucm_tests.lua
    ```
 
 ### E2E Testing

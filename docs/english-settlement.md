@@ -4,8 +4,7 @@
 sequenceDiagram
     autonumber
     actor Settler as Settler (User/App)
-    participant Market as Marketplace Process (`src/ucm.lua` → `english_auction.settleAuction`)
-    participant Activity as Activity Process (`src/activity.lua`)
+    participant Market as Marketplace Process
     participant Treasury as Treasury (fees)
     participant ARIO as ARIO Token Process
     participant ANT as ANT Token Process
@@ -22,8 +21,8 @@ sequenceDiagram
         Market->>Treasury: sendFeeToTreasury(winningBid, ...)
         Market->>ARIO: Transfer ARIO to Seller (minus fee)
         Market->>ANT: Transfer ANT to Winner
-        Market->>Activity: recordAuctionSettlement(...)
-        Market->>Activity: recordExecutedOrder(...)
+        Market->>Market: recordAuctionSettlement(...)
+        Market->>Market: recordExecutedOrder(...)
         Market->>Market: Remove order from Orderbook
         Market->>Market: Clear bids
         Market-->>Winner: Auction-Won (OrderId, WinningBid, Quantity)
