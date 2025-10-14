@@ -2,7 +2,6 @@ local bint = require('.bint')(256)
 local json = require('json')
 
 local utils = require('utils')
-local helpers = require('helpers')
 local activity = require('activity')
 
 local fixed_price = {}
@@ -165,7 +164,7 @@ function fixed_price.handleAntOrder(args, validPair, pairIndex)
 				end
 
 				-- Record the match
-				local match = helpers.recordMatch(args, currentOrderEntry, validPair, calculatedFillAmount)
+				local match = activity.recordMatch(args, currentOrderEntry, validPair, calculatedFillAmount)
 				table.insert(matches, match)
 
 				-- Mark the order index for removal
