@@ -1,5 +1,5 @@
 local json = require('json')
-local bint = require('bint')(256)
+local bint = require('.bint')(256)
 
 local utils = {}
 if not AccruedFeesAmount then AccruedFeesAmount = 0 end
