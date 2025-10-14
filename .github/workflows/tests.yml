@@ -28,32 +28,18 @@ jobs:
                 run: |
                     luarocks make --only-deps arns-marketplace-process-0.1.0-1.rockspec
 
-            -   name: Run UCM tests
+            -   name: Run all tests
                 if: ${{ always() }}
                 run: |
+                    set -e
                     cd tests
-                    lua ucm_tests.lua
-
-            -   name: Run Dutch auction tests
-                if: ${{ always() }}
-                run: |
-                    cd tests
-                    lua dutch_tests.lua
-
-            -   name: Run general tests
-                if: ${{ always() }}
-                run: |
-                    cd tests
-                    lua tests.lua
-
-            -   name: Run activity tests
-                if: ${{ always() }}
-                run: |
-                    cd tests
-                    lua activity_tests.lua
-
-            -   name: Run english tests
-                if: ${{ always() }}
-                run: |
-                    cd tests
-                    lua english_tests.lua
+                    # Run tests.lua first if present
+                    if [ -f tests.lua ]; then
+                      echo "==> lua tests.lua"
+                      lua tests.lua
+                    fi
+                    # Run all *_tests.lua recursively, sorted
+                    find . -type f -name '*_tests.lua' | sort | while read -r tf; do
+                      echo "==> lua $tf"
+                      lua "$tf"
+                    done

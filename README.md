@@ -86,20 +86,9 @@ Before running the tests, ensure you have the following installed:
 
 1. **Lua 5.4+**: Install Lua for your operating system
    - **macOS**: `brew install lua`
-   - **Ubuntu/Debian**: `sudo apt-get install lua5.4`
-   - **CentOS/RHEL**: `sudo yum install lua54`
+   - **Ubuntu/Debian**: `sudo apt-get install lua5.3`
+   - **CentOS/RHEL**: `sudo yum install lua53`
    - **Windows**: Download from [Lua.org](https://www.lua.org/download.html) or use [Chocolatey](https://chocolatey.org/): `choco install lua`
-
-2. **LuaRocks** (Lua package manager): Install for your operating system
-   - **macOS**: `brew install luarocks`
-   - **Ubuntu/Debian**: `sudo apt-get install luarocks`
-   - **CentOS/RHEL**: `sudo yum install luarocks`
-   - **Windows**: Download from [LuaRocks.org](https://luarocks.org/) or use Chocolatey: `choco install luarocks`
-
-3. **Required Lua modules**: Install the dependencies
-   ```bash
-   luarocks install bint
-   ```
 
 ### Running Tests
 
@@ -110,48 +99,22 @@ To run the test suite:
    cd tests
    ```
 
-2. Run the tests:
+2. To run any specific test, run:
    ```bash
-   lua activity_tests.lua
-   lua dutch_tests.lua
-   lua english_tests.lua
-   lua tests.lua
-   lua ucm_tests.lua
+   lua <test_name>.lua
    ```
 
 ### E2E Testing
-To test the `bundle_ucm.lua` in a real environment, follow these steps.
+To test the `process.lua` in a real environment, follow these steps.
 
-1. Start the processes that will be deploying the required contracts: `aos your_process_name [--wallet /optional/path/to/wallet.json]`. There should be 3 in total.
+1. Start the processes that will be deploying the required contract: `aos your_process_name [--wallet /optional/path/to/wallet.json]`. There should be 2 in total.
 2. Deploy the token blueprint to act as ARIO tokens in one of the processes: `> .load-blueprint token`. The address of that process will be handling token messages. 
-3. Deploy the `activity.lua` and `bundle_ucm.lua` with correct addresses from the first and second step. 
+3. Deploy the `process.lua` with correct addresses from the first and second step. 
 4. Handlers define what actions can be taken. To do an action, for example read orders, send:
 ```
 Send({Target = "processId", Action = "Read-Orders", Tags = {["DominantToken"] = "some-address-1", ["SwapToken"] = "some-address-2"}})
 ```
 5. Check ao.link for debugging or messages results.
-
-## Development
-
-### SDK Development
-
-The SDK provides TypeScript interfaces for interacting with the marketplace:
-
-```bash
-cd sdk
-npm install
-npm run build
-```
-
-### Toolkit Development
-
-The toolkit provides development utilities:
-
-```bash
-cd toolkit
-npm install
-npm run build
-```
 
 ## Deployment
 
@@ -168,9 +131,6 @@ Before deploying, ensure you have:
 
 3. **Environment variables**: Look for `CHANGEME` in code to change required variables:
 ```
-# This is the activity process address.
-ACTIVITY_PROCESS= 
-
 # This is the ARIO token process address.
 ARIO_TOKEN_PROCESS_ID=
 ```
@@ -184,13 +144,13 @@ ARIO_TOKEN_PROCESS_ID=
 
 2. **Deploy the code**:
 	```bash
-	user@aos-2.0.4[Inbox:1]> .load src/bundle_ucm.lua
+	user@aos-2.0.4[Inbox:1]> .load src/process.lua
 	```
 	If the code is correct, the CLI will show the standard prompt.
 
 ### Deployment Notes
 
-- Use `src/bundle_ucm.lua` which is a self-contained version with all dependencies.
+- Use `src/process.lua` which is a self-contained version with all dependencies.
 
 ## Project Structure
 
@@ -206,31 +166,6 @@ This project consists of several components organized into different directories
 - **`activity.lua`** - Activity tracking and reporting system. Manages order history, executed orders, cancelled orders, and provides activity queries with filtering capabilities by address, date range, and asset IDs.
 
 - **`utils.lua`** - Utility functions used throughout the project. Includes address validation, amount validation, JSON message decoding, pair data validation, fee calculations, and table printing utilities.
-
-#### Bundle Files (Combined Modules)
-- **`bundle_ucm.lua`** - Self-contained bundle of the ANT Marketplace with all dependencies included. This is a standalone version that can be deployed independently.
-
-- **`bundle_activity_collection.lua`** - Bundled activity collection system for tracking and managing marketplace activity data.
-
-- **`bundle_activity_asset.lua`** - Bundled asset-specific activity tracking system for monitoring individual asset trading activity.
-
-### SDK (`sdk/`)
-
-The SDK provides TypeScript/JavaScript interfaces for interacting with the ARnS Marketplace:
-
-- **`package.json`** - SDK package configuration with dependencies for Arweave and Permaweb libraries
-- **`build.js`** - Build script for compiling the SDK
-- **`tsconfig.json`** - TypeScript configuration for the SDK
-- **`src/`** - Source code for the SDK including services and helpers
-- **`bin/`** - Binary executables for the SDK
-
-### Toolkit (`toolkit/`)
-
-Development and testing tools for the marketplace:
-
-- **`package.json`** - Toolkit package configuration with AO Connect dependencies
-- **`tsconfig.json`** - TypeScript configuration for the toolkit
-- **`src/index.ts`** - Main toolkit implementation for development and testing utilities
 
 ### Testing (`tests/`)
 
