@@ -9,14 +9,24 @@ permissions:
     packages: read
 
 jobs:
-    lua-tests:
-        runs-on: ubuntu-latest
+    unit:
+        runs-on: ubuntu-24.04
         timeout-minutes: 10
-        container:
-            image: ghcr.io/blockydevs/arns-marketplace-process-tests
         steps:
-            -   name: Checkout code
+            -   name: Check out repository code
                 uses: actions/checkout@v4
+
+            -   name: Setup Lua
+                uses: leafo/gh-actions-lua@v10
+                with:
+                    luaVersion: '5.3'
+
+            -   name: Setup LuaRocks
+                uses: leafo/gh-actions-luarocks@v4.3.0
+
+            -   name: Install Lua dependencies
+                run: |
+                    luarocks make --only-deps arns-marketplace-process-0.1.0-1.rockspec
 
             -   name: Run UCM tests
                 if: ${{ always() }}
