@@ -8,7 +8,7 @@ ARnS Marketplace process implementation for AO. This rock provides the core
 Lua modules used to run the marketplace, including order management, activity
 tracking, auctions, and utilities.
   ]],
-  homepage = "https://github.com/ArweaveTeam/arns-marketplace-process",
+  homepage = "https://arns.app/#/listings",
   license = "MIT",
 }
 
@@ -18,8 +18,7 @@ source = {
 }
 
 dependencies = {
-  "lua >= 5.4",
-  "bint"
+  "lua = 5.3"
 }
 
 build = {
