@@ -1,7 +1,7 @@
 package.path = package.path .. ';../src/?.lua'
 
 local utils = require('utils')
-local bint = require('.bint')(256)
+local bint = require('bint')(256)
 
 -- Helper to compute expected using same math
 local function expectedSend(amount)
