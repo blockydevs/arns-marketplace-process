@@ -2,7 +2,6 @@ local bint = require('.bint')(256)
 local json = require('json')
 
 local utils = require('utils')
-local helpers = require('helpers')
 local activity = require('activity')
 
 local english_auction = {}

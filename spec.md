@@ -24,7 +24,7 @@ Each pair of tokens traded is associated with an order book entry containing mul
 ```lua
 Orderbook = {
     {
-        Pair = [TokenId, TokenId], -- [ARIO, ANT] or [ANT, ARIO]
+        Pair = {TokenId, TokenId}, -- {ARIO, ANT} or {ANT, ARIO}
         Orders = {
             {
                 Id,
@@ -46,7 +46,7 @@ Orderbook = {
                 LeaseStartTimestamp,
                 LeaseEndTimestamp
             }
-        }[],
+        },
         PriceData = {                 -- optional, for VWAP after trades
             Vwap,
             Block,

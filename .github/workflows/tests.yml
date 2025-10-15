@@ -9,41 +9,37 @@ permissions:
     packages: read
 
 jobs:
-    lua-tests:
-        runs-on: ubuntu-latest
+    unit:
+        runs-on: ubuntu-24.04
         timeout-minutes: 10
-        container:
-            image: ghcr.io/blockydevs/arns-marketplace-process-tests
         steps:
-            -   name: Checkout code
+            -   name: Check out repository code
                 uses: actions/checkout@v4
 
-            -   name: Run UCM tests
-                if: ${{ always() }}
-                run: |
-                    cd tests
-                    lua ucm_tests.lua
+            -   name: Setup Lua
+                uses: leafo/gh-actions-lua@v10
+                with:
+                    luaVersion: '5.3'
 
-            -   name: Run Dutch auction tests
-                if: ${{ always() }}
-                run: |
-                    cd tests
-                    lua dutch_tests.lua
+            -   name: Setup LuaRocks
+                uses: leafo/gh-actions-luarocks@v4.3.0
 
-            -   name: Run general tests
-                if: ${{ always() }}
+            -   name: Install Lua dependencies
                 run: |
-                    cd tests
-                    lua tests.lua
+                    luarocks make --only-deps arns-marketplace-process-0.1.0-1.rockspec
 
-            -   name: Run activity tests
+            -   name: Run all tests
                 if: ${{ always() }}
                 run: |
+                    set -e
                     cd tests
-                    lua activity_tests.lua
-
-            -   name: Run english tests
-                if: ${{ always() }}
-                run: |
-                    cd tests
-                    lua english_tests.lua
+                    # Run tests.lua first if present
+                    if [ -f tests.lua ]; then
+                      echo "==> lua tests.lua"
+                      lua tests.lua
+                    fi
+                    # Run all *_tests.lua recursively, sorted
+                    find . -type f -name '*_tests.lua' | sort | while read -r tf; do
+                      echo "==> lua $tf"
+                      lua "$tf"
+                    done
