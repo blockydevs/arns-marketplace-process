@@ -22,12 +22,6 @@ local function normalizeOrderTimestamps(oc)
 	if oc.ExpirationTime then
 		oc.ExpirationTime = tonumber(oc.ExpirationTime)
 	end
-	if oc.LeaseStartTimestamp then
-		oc.LeaseStartTimestamp = tonumber(oc.LeaseStartTimestamp)
-	end
-	if oc.LeaseEndTimestamp then
-		oc.LeaseEndTimestamp = tonumber(oc.LeaseEndTimestamp)
-	end
 	if oc.EndedAt then
 		oc.EndedAt = tonumber(oc.EndedAt)
 	end
@@ -97,21 +91,6 @@ local function decorateOrder(order, status)
 	return oc
 end
 
--- Filter orders by domain name substring
-local function filterOrdersByName(ordersArray, nameFilter)
-	if not nameFilter or nameFilter == '' then
-		return ordersArray
-	end
-	
-	local needle = string.lower(nameFilter)
-	return utils.filterArray(ordersArray, function(_, oc)
-		if not oc.Domain or type(oc.Domain) ~= 'string' then 
-			return false 
-		end
-		return string.find(string.lower(oc.Domain), needle, 1, true) ~= nil
-	end)
-end
-
 -- Build a unified, pure snapshot of all orders at a given time without mutating globals
 local function getListedSnapshot(now)
 	local active, ready, expired = {}, {}, {}
@@ -161,9 +140,6 @@ function activity.getListedOrders(msg)
 	for _, oc in ipairs(active) do table.insert(ordersArray, oc) end
 	for _, oc in ipairs(ready) do table.insert(ordersArray, oc) end
 
-	-- Apply name filter if provided
-	ordersArray = filterOrdersByName(ordersArray, msg.Tags.Namefilter)
-
 	local paginatedOrders = utils.paginateTableWithCursor(ordersArray, page.cursor, 'CreatedAt', page.limit, page.sortBy, page.sortOrder, page.filters)
 
 	ao.send({
@@ -185,9 +161,6 @@ function activity.getCompletedOrders(msg)
 	for _, oc in ipairs(cancelled) do table.insert(ordersArray, oc) end
 	for _, oc in ipairs(settled) do table.insert(ordersArray, oc) end
 	for _, oc in ipairs(expired) do table.insert(ordersArray, oc) end
-
-	-- Apply name filter if provided
-	ordersArray = filterOrdersByName(ordersArray, msg.Tags.Namefilter)
 
 	local paginatedOrders = utils.paginateTableWithCursor(ordersArray, page.cursor, 'CreatedAt', page.limit, page.sortBy, page.sortOrder, page.filters)
 
@@ -479,15 +452,11 @@ function activity.recordListedOrder(order)
         Quantity = order.Quantity,
         Price = order.Price,
         CreatedAt = order.CreatedAt,
-        Domain = order.Domain,
         OrderType = order.OrderType,
         MinimumPrice = order.MinimumPrice,
         DecreaseInterval = order.DecreaseInterval,
         DecreaseStep = order.DecreaseStep,
-        ExpirationTime = order.ExpirationTime,
-        OwnershipType = order.OwnershipType,
-        LeaseStartTimestamp = order.LeaseStartTimestamp,
-        LeaseEndTimestamp = order.LeaseEndTimestamp
+        ExpirationTime = order.ExpirationTime
     })
 end
 
@@ -860,7 +829,6 @@ activity._internal = {
 	applyEnglishAuctionFields = applyEnglishAuctionFields,
 	computeListedStatus = computeListedStatus,
 	decorateOrder = decorateOrder,
-	filterOrdersByName = filterOrdersByName,
 	getListedSnapshot = getListedSnapshot,
 	getExecutedSnapshot = getExecutedSnapshot,
 	getCancelledSnapshot = getCancelledSnapshot
