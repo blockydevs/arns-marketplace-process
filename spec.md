@@ -40,11 +40,6 @@ Orderbook = {
                 MinimumPrice,
                 DecreaseInterval,
                 DecreaseStep,
-                -- metadata (from ARIO records when applicable)
-                Domain,
-                OwnershipType,         -- e.g. 'lease' or 'ownership'
-                LeaseStartTimestamp,
-                LeaseEndTimestamp
             }
         },
         PriceData = {                 -- optional, for VWAP after trades

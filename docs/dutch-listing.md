@@ -11,9 +11,6 @@ sequenceDiagram
     User->>ANT: sendMessage(... X-Order-Action=Create-Order, X-Order-Type=dutch, X-Price, X-Minimum-Price, X-Decrease-Interval, Quantity=ANT)
     ANT->>Market: Transfer with forwarded X-* tags
 
-    Market->>ARIO: Paginated-Records (filter by Creator)
-    ARIO-->>Market: Domain records (ownership metadata)
-
     Market->>Market: dutch_auction.handleArioOrder(args)
     Market->>Market: recordListedOrder(..., MinimumPrice, DecreaseInterval, DecreaseStep)
     Market-->>User: Order-Success (OrderType=dutch, Price, Quantity, X-Group-ID)

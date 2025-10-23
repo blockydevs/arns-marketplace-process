@@ -394,10 +394,6 @@ function english_auction.handleArioOrder(args, validPair, pairIndex)
 		Price = args.price and tostring(args.price),
 		ExpirationTime = args.expirationTime,
 		OrderType = 'english',
-		Domain = args.domain,
-		OwnershipType = args.ownershipType,
-		LeaseStartTimestamp = args.leaseStartTimestamp,
-		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
 	-- Record listed order internally
@@ -411,11 +407,7 @@ function english_auction.handleArioOrder(args, validPair, pairIndex)
 		Price = args.price and tostring(args.price),
 		CreatedAt = args.createdAt,
 		OrderType = 'english',
-		Domain = args.domain,
 		ExpirationTime = args.expirationTime,
-		OwnershipType = args.ownershipType,
-		LeaseStartTimestamp = args.leaseStartTimestamp,
-		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
 	-- Notify sender of successful order creation
@@ -433,11 +425,7 @@ function english_auction.handleArioOrder(args, validPair, pairIndex)
 			Message = 'ARIO order added to orderbook for English auction!',
 			['X-Group-ID'] = args.orderGroupId,
 			OrderType = 'english',
-			Domain = args.domain,
 			ExpirationTime = args.expirationTime,
-			OwnershipType = args.ownershipType,
-			LeaseStartTimestamp = args.leaseStartTimestamp,
-			LeaseEndTimestamp = args.leaseEndTimestamp
 		}
 	})
 end

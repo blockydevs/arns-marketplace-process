@@ -8,7 +8,6 @@ sequenceDiagram
     participant ANT as ANT Token Process
     participant Market as Marketplace Process
     participant Treasury as Treasury (fees)
-    participant Seller as Order Creator
 
     Buyer->>ARIO: sendMessage(... X-Order-Action=Create-Order, Quantity=sentARIO)
     ARIO->>Market: Transfer with forwarded X-* tags

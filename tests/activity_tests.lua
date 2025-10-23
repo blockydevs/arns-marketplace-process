@@ -377,8 +377,6 @@ utils.test('normalizeOrderTimestamps should convert timestamps to numbers',
 			OrderId = 'order-1',
 			CreatedAt = '1722535710966',
 			ExpirationTime = '1722535712000',
-			LeaseStartTimestamp = '1722535710000',
-			LeaseEndTimestamp = '1722535715000',
 			EndedAt = '1722535713000'
 		}
 		
@@ -391,8 +389,6 @@ utils.test('normalizeOrderTimestamps should convert timestamps to numbers',
 		OrderId = 'order-1',
 		CreatedAt = 1722535710966,
 		ExpirationTime = 1722535712000,
-		LeaseStartTimestamp = 1722535710000,
-		LeaseEndTimestamp = 1722535715000,
 		EndedAt = 1722535713000
 	}
 )
@@ -440,10 +436,6 @@ utils.test('getOrderById should return correct buyer address for settled English
 			Quantity = '1',
 			Price = '2000000000000', -- Final winning bid amount
 			CreatedAt = '1735689900000', -- Settlement timestamp
-			Domain = 'test-domain',
-			OwnershipType = 'full',
-			LeaseStartTimestamp = nil,
-			LeaseEndTimestamp = nil
 		}
 		
 		table.insert(ExecutedOrders, settledOrder)
@@ -502,10 +494,6 @@ utils.test('getOrderById should return correct buyer address for settled English
 		Receiver = 'bidder-winner', -- This is the buyer
 		Quantity = '1',
 		Price = '2000000000000',
-		Domain = 'test-domain',
-		OwnershipType = 'full',
-		LeaseStartTimestamp = nil,
-		LeaseEndTimestamp = nil,
 		Buyer = 'bidder-winner', -- This should match the highest bidder
 		Bids = {
 			{
