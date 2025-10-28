@@ -37,8 +37,6 @@ Handlers.add('Get-Order-Counts-By-Address', Handlers.utils.hasMatchingTag('Actio
 
 Handlers.add('Get-Sales-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Sales-By-Address'), activity.getSalesByAddress)
 
-Handlers.add('Get-UCM-Purchase-Amount', Handlers.utils.hasMatchingTag('Action', 'Get-UCM-Purchase-Amount'), activity.getUCMPurchaseAmount)
-
 Handlers.add('Get-Volume', Handlers.utils.hasMatchingTag('Action', 'Get-Volume'), activity.getVolume)
 
 Handlers.add('Get-Most-Traded-Tokens', Handlers.utils.hasMatchingTag('Action', 'Get-Most-Traded-Tokens'), activity.getMostTradedTokens)

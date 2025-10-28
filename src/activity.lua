@@ -5,8 +5,6 @@ local utils = require('utils')
 
 local activity = {}
 
-UCM_PROCESS = '5KFwDdQXLlUYOnJhpjbiTszE67IYVKD4MFgULo2VRvs'
-
 if not ListedOrders then ListedOrders = {} end
 if not ExecutedOrders then ExecutedOrders = {} end
 if not CancelledOrders then CancelledOrders = {} end
@@ -261,12 +259,9 @@ end
 function activity.getActivity(msg)
 	local decodeCheck, data = utils.decodeMessageData(msg.Data)
 
+	-- If the data is not valid, set it to an empty object, returning everything as is
 	if not decodeCheck then
-		ao.send({
-			Target = msg.From,
-			Action = 'Input-Error'
-		})
-		return
+		data = {}
 	end
 
 	local now = tonumber(msg.Timestamp)
@@ -342,10 +337,6 @@ function activity.getActivity(msg)
 			ExecutedOrders = executedWithFields,
 			CancelledOrders = cancelledWithFields,
 			ExpiredOrders = expiredWithFields,
-			ActiveOrders = listedWithFields,
-			SettledOrders = executedWithFields,
-			CancelledOrdersList = cancelledWithFields,
-			ExpiredOrdersList = expiredWithFields
 		})
 	})
 end
@@ -503,22 +494,6 @@ function activity.recordAuctionSettlement(settlement)
             Timestamp = settlement.Timestamp
         }
     end
-end
-
--- Business logic for getting UCM purchase amount
-function activity.getUCMPurchaseAmount(msg)
-	local totalBurnAmount = bint(0)
-	for _, order in ipairs(ExecutedOrders) do
-		if order.Receiver == UCM_PROCESS then
-			totalBurnAmount = totalBurnAmount + bint(order.Quantity)
-		end
-	end
-
-	ao.send({
-		Target = msg.From,
-		Action = 'UCM-Purchase-Amount-Notice',
-		BurnAmount = tostring(totalBurnAmount)
-	})
 end
 
 -- Business logic for getting volume
