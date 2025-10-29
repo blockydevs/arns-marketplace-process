@@ -27,10 +27,6 @@ function dutch_auction.handleArioOrder(args, validPair, pairIndex)
 		MinimumPrice = args.minimumPrice and tostring(args.minimumPrice),
 		DecreaseInterval = args.decreaseInterval and tostring(args.decreaseInterval),
 		DecreaseStep = tostring(decreaseStep),
-		Domain = args.domain,
-		OwnershipType = args.ownershipType,
-		LeaseStartTimestamp = args.leaseStartTimestamp,
-		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
 	activity.recordListedOrder({
@@ -47,10 +43,6 @@ function dutch_auction.handleArioOrder(args, validPair, pairIndex)
 		MinimumPrice = args.minimumPrice and tostring(args.minimumPrice),
 		DecreaseInterval = args.decreaseInterval and tostring(args.decreaseInterval),
 		DecreaseStep = tostring(decreaseStep),
-		Domain = args.domain,
-		OwnershipType = args.ownershipType,
-		LeaseStartTimestamp = args.leaseStartTimestamp,
-		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
 	-- Notify sender of successful order creation
@@ -68,10 +60,6 @@ function dutch_auction.handleArioOrder(args, validPair, pairIndex)
 			Message = 'ARIO order added to orderbook for Dutch auction!',
 			['X-Group-ID'] = args.orderGroupId,
 			OrderType = 'dutch',
-			Domain = args.domain,
-			OwnershipType = args.ownershipType,
-			LeaseStartTimestamp = args.leaseStartTimestamp,
-			LeaseEndTimestamp = args.leaseEndTimestamp
 		}
 	})
 end

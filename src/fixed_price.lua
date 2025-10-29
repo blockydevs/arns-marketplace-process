@@ -42,10 +42,6 @@ function fixed_price.handleArioOrder(args, validPair, pairIndex)
 		Price = args.price and tostring(args.price),
 		ExpirationTime = args.expirationTime,
 		OrderType = 'fixed',
-		Domain = args.domain,
-		OwnershipType = args.ownershipType,
-		LeaseStartTimestamp = args.leaseStartTimestamp,
-		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
 	-- Record listed order internally
@@ -59,11 +55,7 @@ function fixed_price.handleArioOrder(args, validPair, pairIndex)
 		Price = args.price and tostring(args.price),
 		CreatedAt = args.createdAt,
 		OrderType = 'fixed',
-		Domain = args.domain,
 		ExpirationTime = args.expirationTime,
-		OwnershipType = args.ownershipType,
-		LeaseStartTimestamp = args.leaseStartTimestamp,
-		LeaseEndTimestamp = args.leaseEndTimestamp
 	})
 
 	-- Notify sender of successful order creation
@@ -81,11 +73,7 @@ function fixed_price.handleArioOrder(args, validPair, pairIndex)
 			Message = 'ARIO order added to orderbook for buy now!',
 			['X-Group-ID'] = args.orderGroupId,
 			OrderType = 'fixed',
-			Domain = args.domain,
 			ExpirationTime = args.expirationTime,
-			OwnershipType = args.ownershipType,
-			LeaseStartTimestamp = args.leaseStartTimestamp,
-			LeaseEndTimestamp = args.leaseEndTimestamp
 		}
 	})
 end

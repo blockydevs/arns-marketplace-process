@@ -5,8 +5,6 @@ local utils = require('utils')
 
 local activity = {}
 
-UCM_PROCESS = '5KFwDdQXLlUYOnJhpjbiTszE67IYVKD4MFgULo2VRvs'
-
 if not ListedOrders then ListedOrders = {} end
 if not ExecutedOrders then ExecutedOrders = {} end
 if not CancelledOrders then CancelledOrders = {} end
@@ -21,12 +19,6 @@ local function normalizeOrderTimestamps(oc)
 	end
 	if oc.ExpirationTime then
 		oc.ExpirationTime = tonumber(oc.ExpirationTime)
-	end
-	if oc.LeaseStartTimestamp then
-		oc.LeaseStartTimestamp = tonumber(oc.LeaseStartTimestamp)
-	end
-	if oc.LeaseEndTimestamp then
-		oc.LeaseEndTimestamp = tonumber(oc.LeaseEndTimestamp)
 	end
 	if oc.EndedAt then
 		oc.EndedAt = tonumber(oc.EndedAt)
@@ -97,21 +89,6 @@ local function decorateOrder(order, status)
 	return oc
 end
 
--- Filter orders by domain name substring
-local function filterOrdersByName(ordersArray, nameFilter)
-	if not nameFilter or nameFilter == '' then
-		return ordersArray
-	end
-	
-	local needle = string.lower(nameFilter)
-	return utils.filterArray(ordersArray, function(_, oc)
-		if not oc.Domain or type(oc.Domain) ~= 'string' then 
-			return false 
-		end
-		return string.find(string.lower(oc.Domain), needle, 1, true) ~= nil
-	end)
-end
-
 -- Build a unified, pure snapshot of all orders at a given time without mutating globals
 local function getListedSnapshot(now)
 	local active, ready, expired = {}, {}, {}
@@ -161,9 +138,6 @@ function activity.getListedOrders(msg)
 	for _, oc in ipairs(active) do table.insert(ordersArray, oc) end
 	for _, oc in ipairs(ready) do table.insert(ordersArray, oc) end
 
-	-- Apply name filter if provided
-	ordersArray = filterOrdersByName(ordersArray, msg.Tags.Namefilter)
-
 	local paginatedOrders = utils.paginateTableWithCursor(ordersArray, page.cursor, 'CreatedAt', page.limit, page.sortBy, page.sortOrder, page.filters)
 
 	ao.send({
@@ -185,9 +159,6 @@ function activity.getCompletedOrders(msg)
 	for _, oc in ipairs(cancelled) do table.insert(ordersArray, oc) end
 	for _, oc in ipairs(settled) do table.insert(ordersArray, oc) end
 	for _, oc in ipairs(expired) do table.insert(ordersArray, oc) end
-
-	-- Apply name filter if provided
-	ordersArray = filterOrdersByName(ordersArray, msg.Tags.Namefilter)
 
 	local paginatedOrders = utils.paginateTableWithCursor(ordersArray, page.cursor, 'CreatedAt', page.limit, page.sortBy, page.sortOrder, page.filters)
 
@@ -288,12 +259,9 @@ end
 function activity.getActivity(msg)
 	local decodeCheck, data = utils.decodeMessageData(msg.Data)
 
+	-- If the data is not valid, set it to an empty object, returning everything as is
 	if not decodeCheck then
-		ao.send({
-			Target = msg.From,
-			Action = 'Input-Error'
-		})
-		return
+		data = {}
 	end
 
 	local now = tonumber(msg.Timestamp)
@@ -369,10 +337,6 @@ function activity.getActivity(msg)
 			ExecutedOrders = executedWithFields,
 			CancelledOrders = cancelledWithFields,
 			ExpiredOrders = expiredWithFields,
-			ActiveOrders = listedWithFields,
-			SettledOrders = executedWithFields,
-			CancelledOrdersList = cancelledWithFields,
-			ExpiredOrdersList = expiredWithFields
 		})
 	})
 end
@@ -479,15 +443,11 @@ function activity.recordListedOrder(order)
         Quantity = order.Quantity,
         Price = order.Price,
         CreatedAt = order.CreatedAt,
-        Domain = order.Domain,
         OrderType = order.OrderType,
         MinimumPrice = order.MinimumPrice,
         DecreaseInterval = order.DecreaseInterval,
         DecreaseStep = order.DecreaseStep,
-        ExpirationTime = order.ExpirationTime,
-        OwnershipType = order.OwnershipType,
-        LeaseStartTimestamp = order.LeaseStartTimestamp,
-        LeaseEndTimestamp = order.LeaseEndTimestamp
+        ExpirationTime = order.ExpirationTime
     })
 end
 
@@ -534,22 +494,6 @@ function activity.recordAuctionSettlement(settlement)
             Timestamp = settlement.Timestamp
         }
     end
-end
-
--- Business logic for getting UCM purchase amount
-function activity.getUCMPurchaseAmount(msg)
-	local totalBurnAmount = bint(0)
-	for _, order in ipairs(ExecutedOrders) do
-		if order.Receiver == UCM_PROCESS then
-			totalBurnAmount = totalBurnAmount + bint(order.Quantity)
-		end
-	end
-
-	ao.send({
-		Target = msg.From,
-		Action = 'UCM-Purchase-Amount-Notice',
-		BurnAmount = tostring(totalBurnAmount)
-	})
 end
 
 -- Business logic for getting volume
@@ -860,7 +804,6 @@ activity._internal = {
 	applyEnglishAuctionFields = applyEnglishAuctionFields,
 	computeListedStatus = computeListedStatus,
 	decorateOrder = decorateOrder,
-	filterOrdersByName = filterOrdersByName,
 	getListedSnapshot = getListedSnapshot,
 	getExecutedSnapshot = getExecutedSnapshot,
 	getCancelledSnapshot = getCancelledSnapshot

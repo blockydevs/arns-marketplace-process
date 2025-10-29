@@ -37,8 +37,6 @@ Handlers.add('Get-Order-Counts-By-Address', Handlers.utils.hasMatchingTag('Actio
 
 Handlers.add('Get-Sales-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Sales-By-Address'), activity.getSalesByAddress)
 
-Handlers.add('Get-UCM-Purchase-Amount', Handlers.utils.hasMatchingTag('Action', 'Get-UCM-Purchase-Amount'), activity.getUCMPurchaseAmount)
-
 Handlers.add('Get-Volume', Handlers.utils.hasMatchingTag('Action', 'Get-Volume'), activity.getVolume)
 
 Handlers.add('Get-Most-Traded-Tokens', Handlers.utils.hasMatchingTag('Action', 'Get-Most-Traded-Tokens'), activity.getMostTradedTokens)
@@ -160,36 +158,6 @@ Handlers.add('Credit-Notice', Handlers.utils.hasMatchingTag('Action', 'Credit-No
 		end
 		if msg.Tags['X-Transfer-Denomination'] then
 			orderArgs.transferDenomination = msg.Tags['X-Transfer-Denomination']
-		end
-
-		if msg.Tags['X-Swap-Token'] == ARIO_TOKEN_PROCESS_ID then
-			-- Fetch domain from ARIO token process
-			local domainPaginatedRecords = ao.send({
-				Target = ARIO_TOKEN_PROCESS_ID,
-				Action = "Paginated-Records",
-				Data = "",
-				Tags = {
-					Action = "Paginated-Records",
-					Filters = string.format("{\"processId\":[\"%s\"]}", msg.From)
-				}
-			}).receive()
-			
-			local decodeCheck, domainData = utils.decodeMessageData(domainPaginatedRecords.Data)
-			local items = (decodeCheck and domainData and domainData.items) or nil
-			if not items or type(items) ~= 'table' or not items[1] or not items[1].name or not items[1].type then
-				refundAndError('Failed to fetch domain')
-				return
-			end
-			local first = items[1]
-			local domain = first.name
-			local ownershipType = first.type
-
-			if ownershipType == "lease" then
-				orderArgs.leaseStartTimestamp = first.startTimestamp
-				orderArgs.leaseEndTimestamp = first.endTimestamp
-			end
-			orderArgs.domain = domain
-			orderArgs.ownershipType = ownershipType
 		end
 
 		-- Protect order creation to refund on unexpected runtime errors

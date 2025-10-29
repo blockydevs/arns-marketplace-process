@@ -11,9 +11,6 @@ sequenceDiagram
     User->>ANT: sendMessage(... X-Order-Action=Create-Order, X-Order-Type=english, X-Expiration-Time, X-Price, Quantity=ANT)
     ANT->>Market: Transfer with forwarded X-* tags
 
-    Market->>ARIO: Paginated-Records (filter by Creator)
-    ARIO-->>Market: Domain records (ownership metadata)
-
     Market->>Market: english_auction.handleArioOrder(args)
     Market->>Market: recordListedOrder(..., ExpirationTime)
     Market-->>User: Order-Success (OrderType=english, Price, Quantity, X-Group-ID)
